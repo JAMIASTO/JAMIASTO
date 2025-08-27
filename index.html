@@ -1,0 +1,4117 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <title>JAMIASTO - Mapa: toalety, wodopoje, bankomaty i apteki</title>
+  <style>
+    :root {
+      --primary-blue: #1976d2;
+      --primary-red: #d32f2f;
+      --primary-green: #2e7d32;
+      --primary-orange: #f57c00;
+      --primary-purple: #7b1fa2;
+      --text-gray: #333;
+      --bg-light: #f8f9fa;
+      --border-light: #e0e0e0;
+      --shadow: 0 4px 20px rgba(0,0,0,0.1);
+      --shadow-hover: 0 8px 30px rgba(0,0,0,0.15);
+      --gradient-poland: linear-gradient(135deg, #d32f2f 0%, #1976d2 100%);
+      --gradient-bg: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--gradient-bg);
+      color: var(--text-gray);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Header Styles */
+    .hero-header {
+      background: var(--gradient-poland);
+      position: relative;
+      overflow: hidden;
+      padding: 3rem 0;
+      text-align: center;
+      color: white;
+    }
+
+    .hero-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.05) 50%, transparent 52%);
+      background-size: 20px 20px;
+    }
+
+    .jamiasto-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(45deg, #FFFFFF, #F0F0F0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 10;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      position: relative;
+      z-index: 10;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-features {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 10;
+    }
+
+    .hero-feature {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Modern Card */
+    .modern-card {
+      background: white;
+      border-radius: 2rem;
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      margin: 2rem 0;
+      border: 1px solid rgba(255,255,255,0.8);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modern-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient-poland);
+    }
+
+    .modern-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-icon {
+      font-size: 2rem;
+      color: var(--primary-blue);
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      margin: 0;
+    }
+
+    /* Voivodeship Grid */
+    .voivodeship-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .voivodeship-card {
+      background: white;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      min-height: 240px;
+      border: 2px solid transparent;
+    }
+
+    .voivodeship-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--primary-blue);
+    }
+
+
+    .voivodeship-image {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .voivodeship-card:hover .voivodeship-image {
+      transform: scale(1.05);
+    }
+
+    .voivodeship-content {
+      padding: 1.5rem;
+    }
+
+    .voivodeship-name {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-gray);
+      margin-bottom: 0.5rem;
+    }
+
+    .voivodeship-cities {
+      font-size: 0.9rem;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* City Grid */
+    .city-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .city-card {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: 1rem;
+      padding: 1.2rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-align: center;
+      font-weight: 500;
+      color: var(--text-gray);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .city-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .city-card:hover::before {
+      left: 100%;
+    }
+
+    .city-card:hover {
+      background: linear-gradient(135deg, var(--primary-blue), #1565c0);
+      color: white;
+      border-color: var(--primary-blue);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+    }
+
+    /* Improved Buttons */
+    .modern-btn {
+      padding: 1rem 2rem;
+      border-radius: 1rem;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      min-height: 48px;
+    }
+
+    .modern-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .modern-btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-blue), #1565c0);
+      color: white;
+      box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1565c0, #0d47a1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(25, 118, 210, 0.4);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text-gray);
+      border: 2px solid var(--border-light);
+      box-shadow: var(--shadow);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-light);
+      border-color: var(--primary-blue);
+      color: var(--primary-blue);
+      transform: translateY(-2px);
+    }
+
+    /* Improved Green Button */
+    .btn-success {
+      background: linear-gradient(135deg, var(--primary-green), #1b5e20);
+      color: white;
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #1b5e20, #0d4a11);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(46, 125, 50, 0.4);
+    }
+
+    /* Improved Red Button */
+    .btn-danger {
+      background: linear-gradient(135deg, var(--primary-red), #b71c1c);
+      color: white;
+      box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #b71c1c, #8e0000);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(211, 47, 47, 0.4);
+    }
+
+    .geolocation-btn {
+      background: linear-gradient(135deg, var(--primary-green), #1b5e20);
+      color: white;
+      border: none;
+      padding: 1.2rem 2rem;
+      border-radius: 1.2rem;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      width: 100%;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .geolocation-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .geolocation-btn:hover::before {
+      left: 100%;
+    }
+
+    .geolocation-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1b5e20, #0d4a11);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(46, 125, 50, 0.4);
+    }
+
+    .geolocation-btn:disabled {
+      background: linear-gradient(135deg, #ccc, #aaa);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Back Button */
+    .back-btn {
+      background: var(--bg-light);
+      border: 2px solid var(--border-light);
+      border-radius: 0.8rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      color: var(--text-gray);
+    }
+
+    .back-btn:hover {
+      background: white;
+      border-color: var(--primary-blue);
+      color: var(--primary-blue);
+    }
+
+    /* Action Grid */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    /* Info Box */
+    .info-box {
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      border: 2px solid #1976d2;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      color: #1565c0;
+      font-size: 0.95rem;
+    }
+
+    /* Filter Panel */
+    .filter-panel {
+      background: linear-gradient(135deg, #f8f9fa, #ffffff);
+      border: 2px solid #e3f2fd;
+      border-radius: 2rem;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .filter-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .filter-controls {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .filter-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .filter-btn:hover::before {
+      left: 100%;
+    }
+
+    .filter-all-btn {
+      background: linear-gradient(135deg, var(--primary-green), #1b5e20);
+      color: white;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    }
+
+    .filter-none-btn {
+      background: linear-gradient(135deg, var(--primary-red), #b71c1c);
+      color: white;
+      box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+    }
+
+    .filter-all-btn:hover, .filter-none-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+
+    .filter-all-btn:hover {
+      background: linear-gradient(135deg, #1b5e20, #0d4a11);
+    }
+
+    .filter-none-btn:hover {
+      background: linear-gradient(135deg, #b71c1c, #8e0000);
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .filter-item {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: 1.2rem;
+      padding: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      user-select: none;
+    }
+
+    .filter-item:hover {
+      border-color: var(--primary-blue);
+      background: #f8f9fa;
+      transform: translateY(-2px);
+    }
+
+    .filter-item.active {
+      border-color: var(--primary-blue);
+      background: linear-gradient(135deg, #e3f2fd, #f8f9fa);
+      box-shadow: 0 4px 15px rgba(25, 118, 210, 0.2);
+    }
+
+    .filter-checkbox {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #ccc;
+      border-radius: 0.5rem;
+      background: white;
+      position: relative;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .filter-item.active .filter-checkbox {
+      background: var(--primary-blue);
+      border-color: var(--primary-blue);
+    }
+
+    .filter-item.active .filter-checkbox::after {
+      content: '?';
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .filter-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .filter-info {
+      flex: 1;
+    }
+
+    .filter-name {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .filter-count {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    /* Map Section */
+    .map-container {
+      height: 70vh;
+      min-height: 500px;
+      border-radius: 1.5rem;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .legend {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: 1.2rem;
+      padding: 1.5rem;
+      margin-top: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .legend-title {
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-gray);
+      font-size: 1.1rem;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    .legend-icon {
+      font-size: 1.2rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 2rem;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .modal-header {
+      padding: 2rem 2rem 0;
+      border-bottom: 2px solid #f0f0f0;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      margin: 0 0 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .modal-body {
+      padding: 0 2rem 2rem;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      color: #666;
+    }
+
+    .close-btn:hover {
+      background: #e0e0e0;
+      color: var(--primary-red);
+      transform: scale(1.1);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-gray);
+      font-size: 1rem;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid var(--border-light);
+      border-radius: 0.8rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    }
+
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .status-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .status-btn {
+      padding: 1rem;
+      border: 2px solid var(--border-light);
+      border-radius: 1rem;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .status-btn:hover::before {
+      left: 100%;
+    }
+
+    .status-btn:hover {
+      border-color: var(--primary-blue);
+      background: #f8f9fa;
+      transform: translateY(-2px);
+    }
+
+    .status-btn.active.working {
+      background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+      border-color: var(--primary-green);
+      color: var(--primary-green);
+    }
+
+    .status-btn.active.needs-repair {
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border-color: var(--primary-orange);
+      color: var(--primary-orange);
+    }
+
+    .status-btn.active.not-working {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2);
+      border-color: var(--primary-red);
+      color: var(--primary-red);
+    }
+
+    .error-message {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2);
+      border: 2px solid #f44336;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin: 1rem 0;
+      color: #c62828;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .error-icon {
+      font-size: 1.2rem;
+      color: #f44336;
+    }
+
+    .char-counter {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    .char-counter.warning {
+      color: var(--primary-orange);
+    }
+
+    .char-counter.danger {
+      color: var(--primary-red);
+    }
+
+    /* Comments Display */
+    .comments-section {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 1rem;
+      border: 1px solid var(--border-light);
+    }
+
+    .comments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .comments-title {
+      font-weight: 600;
+      color: var(--text-gray);
+      font-size: 1rem;
+    }
+
+    .comment-item {
+      background: white;
+      border-radius: 0.8rem;
+      padding: 1rem;
+      margin-bottom: 0.8rem;
+      border: 1px solid var(--border-light);
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .comment-author {
+      font-weight: 600;
+      color: var(--text-gray);
+    }
+
+    .comment-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .comment-status.working {
+      background: #e8f5e8;
+      color: var(--primary-green);
+    }
+
+    .comment-status.needs-repair {
+      background: #fff3e0;
+      color: var(--primary-orange);
+    }
+
+    .comment-status.not-working {
+      background: #ffebee;
+      color: var(--primary-red);
+    }
+
+    .comment-text {
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+    }
+
+    .comment-date {
+      color: #888;
+      font-size: 0.8rem;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e3f2fd;
+      border-top: 4px solid var(--primary-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-weight: 600;
+      color: var(--primary-blue);
+      font-size: 1.1rem;
+    }
+
+    /* Ukrywanie elementów */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Toast notifications */
+    .toast {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: linear-gradient(135deg, #1976d2, #1565c0);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 8px 32px rgba(25, 118, 210, 0.3);
+      z-index: 1002;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 400px;
+    }
+
+    /* NEW: Navigation Styles */
+    .nav-option-btn {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 0.8rem;
+      padding: 0.8rem;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .nav-option-btn:hover {
+      background: #e9ecef;
+      border-color: #adb5bd;
+    }
+
+    .nav-option-btn.active {
+      background: #1976d2;
+      color: white;
+      border-color: #1976d2;
+    }
+
+    .nav-option-btn i {
+      font-size: 1.1rem;
+    }
+
+    .direction-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border-bottom: 1px solid #f0f0f0;
+      background: white;
+      transition: background-color 0.2s ease;
+    }
+
+    .direction-step:hover {
+      background: #f8f9fa;
+    }
+
+    .direction-step:last-child {
+      border-bottom: none;
+    }
+
+    .step-icon {
+      background: #1976d2;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-instruction {
+      font-weight: 500;
+      color: #333;
+      line-height: 1.4;
+      margin-bottom: 0.3rem;
+    }
+
+    .step-distance {
+      color: #666;
+      font-size: 0.8rem;
+    }
+
+    .route-polyline {
+      stroke: #1976d2;
+      stroke-width: 4;
+      stroke-opacity: 0.8;
+      fill: none;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .jamiasto-title {
+        font-size: 2.5rem;
+      }
+
+      .modern-card {
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-radius: 1.5rem;
+      }
+
+      .container {
+        padding: 0 1rem;
+      }
+
+      .hero-header {
+        padding: 2rem 0;
+      }
+
+      .voivodeship-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .city-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .legend-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-features {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .status-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-content {
+        margin: 1rem;
+        border-radius: 1.5rem;
+      }
+
+      .modal-header, .modal-body {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Enhanced Header -->
+  <header class="hero-header">
+    <div class="container">
+      <h1 class="jamiasto-title">JAMIASTO</h1>
+      <p class="subtitle">Najwa¿niejsze punkty w twoim mieœcie z opiniami u¿ytkowników</p>
+      <div class="hero-features">
+        <div class="hero-feature">
+          <i class="fas fa-map-marked-alt"></i>
+          <span>Lokalizacje</span>
+        </div>
+        <div class="hero-feature">
+          <i class="fas fa-comments"></i>
+          <span>Opinie</span>
+        </div>
+        <div class="hero-feature">
+          <i class="fas fa-filter"></i>
+          <span>Filtry</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Location Selection Card -->
+    <div class="modern-card">
+      <div class="section-header">
+        <i class="fas fa-location-arrow section-icon"></i>
+        <h2 class="section-title">Wybór lokalizacji</h2>
+      </div>
+      
+      <!-- NEW: Quick Search Section -->
+      <div class="search-section" style="margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+          <i class="fas fa-search" style="color: #1976d2;"></i>
+          <h3 style="font-size: 1.1rem; color: #555; margin: 0; font-weight: 600;">Szybkie wyszukiwanie</h3>
+        </div>
+        <div class="search-container" style="position: relative; margin-bottom: 1rem;">
+          <input 
+            type="text" 
+            id="city-search" 
+            class="search-input" 
+            placeholder="Wpisz nazwê miasta (np. Warszawa, Kraków, Gdañsk...)"
+            style="width: 100%; padding: 1rem 3rem 1rem 1rem; border: 2px solid #e0e0e0; border-radius: 1rem; font-size: 1rem; transition: all 0.3s ease; outline: none;"
+            oninput="searchCities(this.value)"
+            onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+            onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none'"
+          />
+          <i class="fas fa-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #999;"></i>
+        </div>
+        <div id="search-results" style="display: none; max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 0.8rem; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+        <div style="text-align: center; margin: 1rem 0; color: #888; font-size: 0.9rem;">
+          <i class="fas fa-info-circle" style="margin-right: 0.3rem;"></i>
+          Lub wybierz z poni¿szych opcji tradycyjnie
+        </div>
+      </div>
+      
+      <!-- Voivodeships Section -->
+      <div id="voivodeship-section">
+        <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #555;">Wybierz województwo</h3>
+        <div class="voivodeship-grid" id="voivodeship-grid">
+          <!-- Województwa bêd¹ wygenerowane przez JavaScript -->
+        </div>
+      </div>
+
+      <!-- Cities Section -->
+      <div id="city-section" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <h3 id="city-title" style="font-size: 1.3rem; color: #555; margin: 0;"></h3>
+          <button class="back-btn" onclick="showVoivodeshipSelection()">
+            <i class="fas fa-arrow-left"></i> Powrót
+          </button>
+        </div>
+        <div class="city-grid" id="city-grid">
+          <!-- Miasta bêd¹ wygenerowane przez JavaScript -->
+        </div>
+      </div>
+
+      <!-- Selected City Section -->
+      <div id="selected-section" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <h3 id="selected-title" style="font-size: 1.3rem; color: #555; margin: 0;"></h3>
+          <button class="back-btn" onclick="showCitySelection()">
+            <i class="fas fa-arrow-left"></i> Powrót
+          </button>
+        </div>
+        
+        <!-- Geolocation Button -->
+        <button class="geolocation-btn" onclick="getUserLocation()">
+          <i class="fas fa-location-crosshairs"></i>
+          <span id="location-text">Okreœl swoj¹ lokalizacjê</span>
+        </button>
+        
+        <div id="location-error" style="display: none;" class="error-message">
+          <i class="fas fa-exclamation-triangle error-icon"></i>
+          <span></span>
+        </div>
+        
+        <div class="action-grid">
+          <button id="show-city-btn" class="modern-btn btn-primary" onclick="showCityOnMap()">
+            <i class="fas fa-map"></i> Podgl¹d miasta
+          </button>
+          <button id="reset-view-btn" class="modern-btn btn-secondary" onclick="resetMapView()">
+            <i class="fas fa-refresh"></i> Resetuj widok
+          </button>
+        </div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="info-box">
+        <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
+        Dane pobierane s¹ z <strong>OpenStreetMap (Overpass API)</strong>. 
+        Informacje mog¹ ró¿niæ siê od rzeczywistego stanu. 
+        U¿ytkownicy mog¹ dodawaæ opinie o stanie punktów.
+      </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="modern-card" id="filter-card" style="display: none;">
+      <div class="filter-panel">
+        <div class="filter-header">
+          <h3 class="filter-title">
+            <i class="fas fa-filter"></i>
+            Filtruj punkty na mapie
+          </h3>
+          <div class="filter-controls">
+            <button class="filter-btn filter-all-btn" onclick="selectAllFilters()">
+              <i class="fas fa-check-double"></i> Zaznacz wszystkie
+            </button>
+            <button class="filter-btn filter-none-btn" onclick="deselectAllFilters()">
+              <i class="fas fa-times"></i> Odznacz wszystkie
+            </button>
+          </div>
+        </div>
+        
+        <div id="filter-status" style="display: none; background: #e3f2fd; border: 2px solid #1976d2; border-radius: 0.8rem; padding: 1rem; margin-bottom: 1.5rem; color: #1565c0; font-weight: 500; text-align: center;">
+          Pokazujê <span id="active-filters-count">0</span> z <span id="total-filters-count">6</span> kategorii punktów
+        </div>
+
+        <div class="filter-grid" id="filter-grid">
+          <div class="filter-item active" data-type="drinking_water" onclick="toggleFilter('drinking_water')">
+            <div class="filter-checkbox"></div>
+            <div class="filter-icon" style="color: #2196f3;">??</div>
+            <div class="filter-info">
+              <div class="filter-name">Wodopoje</div>
+              <div class="filter-count">0 punktów</div>
+            </div>
+          </div>
+          
+          <div class="filter-item active" data-type="toilets_free" onclick="toggleFilter('toilets_free')">
+            <div class="filter-checkbox"></div>
+            <div class="filter-icon" style="color: #4caf50;">??</div>
+            <div class="filter-info">
+              <div class="filter-name">Toalety bezp³atne</div>
+              <div class="filter-count">0 punktów</div>
+            </div>
+          </div>
+          
+          <div class="filter-item active" data-type="toilets_paid" onclick="toggleFilter('toilets_paid')">
+            <div class="filter-checkbox"></div>
+            <div class="filter-icon" style="color: #f44336;">??</div>
+            <div class="filter-info">
+              <div class="filter-name">Toalety p³atne</div>
+              <div class="filter-count">0 punktów</div>
+            </div>
+          </div>
+          
+          <div class="filter-item active" data-type="toilets_unknown" onclick="toggleFilter('toilets_unknown')">
+            <div class="filter-checkbox"></div>
+            <div class="filter-icon" style="color: #9e9e9e;">??</div>
+            <div class="filter-info">
+              <div class="filter-name">Toalety (brak info)</div>
+              <div class="filter-count">0 punktów</div>
+            </div>
+          </div>
+          
+          <div class="filter-item active" data-type="atm" onclick="toggleFilter('atm')">
+            <div class="filter-checkbox"></div>
+            <div class="filter-icon" style="color: #ff9800;">??</div>
+            <div class="filter-info">
+              <div class="filter-name">Bankomaty</div>
+              <div class="filter-count">0 punktów</div>
+            </div>
+          </div>
+          
+          <div class="filter-item active" data-type="pharmacy" onclick="toggleFilter('pharmacy')">
+            <div class="filter-checkbox"></div>
+            <div class="filter-icon" style="color: #9c27b0;">??</div>
+            <div class="filter-info">
+              <div class="filter-name">Apteki</div>
+              <div class="filter-count">0 punktów</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="modern-card" id="map-card" style="display: none;">
+      <div class="section-header">
+        <i class="fas fa-map section-icon"></i>
+        <h2 class="section-title">Interaktywna mapa</h2>
+      </div>
+      
+      <div id="map" class="map-container"></div>
+      
+      <div class="legend">
+        <h4 class="legend-title">Legenda</h4>
+        <div class="legend-grid">
+          <div class="legend-item">
+            <span class="legend-icon" style="color: #2196f3;">??</span> Wodopój
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon" style="color: #4caf50;">??</span> Toaleta bezp³atna
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon" style="color: #f44336;">??</span> Toaleta p³atna
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon" style="color: #ff9800;">??</span> Bankomat
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon" style="color: #9c27b0;">??</span> Apteka
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon" style="color: #9e9e9e;">?</span> Toaleta (brak info)
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- NEW: Navigation Panel -->
+    <div class="modern-card" id="navigation-card" style="display: none;">
+      <div class="section-header">
+        <i class="fas fa-route section-icon"></i>
+        <h2 class="section-title">Nawigacja</h2>
+        <button class="close-btn" onclick="closeNavigation()" style="background: #f5f5f5; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div id="navigation-content">
+        <div class="navigation-header" style="margin-bottom: 1.5rem;">
+          <div class="destination-info" style="background: #e3f2fd; padding: 1rem; border-radius: 0.8rem; margin-bottom: 1rem;">
+            <h3 style="margin: 0 0 0.5rem 0; color: #1565c0; font-size: 1.1rem;">
+              <i class="fas fa-map-marker-alt" style="margin-right: 0.5rem;"></i>
+              <span id="nav-destination-name">Cel podró¿y</span>
+            </h3>
+            <p style="margin: 0; color: #1976d2; font-size: 0.9rem;" id="nav-destination-address">Adres</p>
+          </div>
+          
+          <div class="navigation-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem;">
+            <button class="nav-option-btn active" data-type="walking" onclick="setNavigationType('walking')">
+              <i class="fas fa-walking"></i> Pieszo
+            </button>
+            <button class="nav-option-btn" data-type="driving" onclick="setNavigationType('driving')">
+              <i class="fas fa-car"></i> Samochodem
+            </button>
+          </div>
+          
+          <div class="route-summary" id="route-summary" style="display: none; background: #f8f9fa; padding: 1rem; border-radius: 0.8rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span id="route-distance" style="font-weight: 600; color: #333;">--</span>
+                <span style="color: #666; margin-left: 0.5rem;">•</span>
+                <span id="route-duration" style="color: #666; margin-left: 0.5rem;">--</span>
+              </div>
+              <button class="modern-btn btn-primary" onclick="startNavigation()" style="padding: 0.5rem 1rem;">
+                <i class="fas fa-play"></i> Rozpocznij
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div id="navigation-directions" style="max-height: 300px; overflow-y: auto;">
+          <!-- Instrukcje bêd¹ tu dodane przez JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment Modal -->
+  <div class="modal-overlay" id="comment-modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeCommentModal()">
+        <i class="fas fa-times"></i>
+      </button>
+      
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-comment-plus"></i>
+          Dodaj opiniê: <span id="modal-point-name"></span>
+        </h3>
+      </div>
+      
+      <div class="modal-body">
+        <form id="comment-form">
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-traffic-light"></i>
+              Status punktu: <span style="color: var(--primary-red);">*</span>
+            </label>
+            <div class="status-buttons">
+              <button type="button" class="status-btn" data-status="working" onclick="selectStatus('working')">
+                ? Dzia³a
+              </button>
+              <button type="button" class="status-btn" data-status="needs-repair" onclick="selectStatus('needs-repair')">
+                ? Wymaga naprawy
+              </button>
+              <button type="button" class="status-btn" data-status="not-working" onclick="selectStatus('not-working')">
+                ? Nie dzia³a
+              </button>
+            </div>
+            <div id="status-error" class="error-message" style="display: none;">
+              <i class="fas fa-exclamation-triangle error-icon"></i>
+              <span>Proszê wybraæ status punktu</span>
+            </div>
+          </div>
+
+          <!-- NEW: Star Rating System -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-star" style="color: #ffd700;"></i>
+              Ocena punktu: <span style="color: var(--primary-red);">*</span>
+            </label>
+            <div class="star-rating" style="display: flex; align-items: center; gap: 0.5rem; margin: 0.8rem 0;">
+              <div class="stars" style="display: flex; gap: 0.2rem;">
+                <span class="star" data-rating="1" onclick="selectRating(1)" style="font-size: 1.8rem; color: #ddd; cursor: pointer; transition: color 0.2s;" onmouseover="hoverRating(1)" onmouseout="resetRatingHover()">?</span>
+                <span class="star" data-rating="2" onclick="selectRating(2)" style="font-size: 1.8rem; color: #ddd; cursor: pointer; transition: color 0.2s;" onmouseover="hoverRating(2)" onmouseout="resetRatingHover()">?</span>
+                <span class="star" data-rating="3" onclick="selectRating(3)" style="font-size: 1.8rem; color: #ddd; cursor: pointer; transition: color 0.2s;" onmouseover="hoverRating(3)" onmouseout="resetRatingHover()">?</span>
+                <span class="star" data-rating="4" onclick="selectRating(4)" style="font-size: 1.8rem; color: #ddd; cursor: pointer; transition: color 0.2s;" onmouseover="hoverRating(4)" onmouseout="resetRatingHover()">?</span>
+                <span class="star" data-rating="5" onclick="selectRating(5)" style="font-size: 1.8rem; color: #ddd; cursor: pointer; transition: color 0.2s;" onmouseover="hoverRating(5)" onmouseout="resetRatingHover()">?</span>
+              </div>
+              <span id="rating-text" style="color: #666; font-size: 0.9rem; margin-left: 0.5rem;">Kliknij gwiazdki aby oceniæ</span>
+            </div>
+            <div id="rating-error" class="error-message" style="display: none;">
+              <i class="fas fa-exclamation-triangle error-icon"></i>
+              <span>Proszê wybraæ ocenê punktu</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="comment-text">
+              <i class="fas fa-edit"></i>
+              Opis: <span style="color: var(--primary-red);">*</span>
+            </label>
+            <textarea
+              id="comment-text"
+              class="form-textarea"
+              placeholder="Opisz stan punktu, problemy, dodatkowe informacje..."
+              maxlength="500"
+              oninput="updateCharCounter()"
+            ></textarea>
+            <div id="char-counter" class="char-counter">0/500 znaków</div>
+            <div id="text-error" class="error-message" style="display: none;">
+              <i class="fas fa-exclamation-triangle error-icon"></i>
+              <span></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="comment-author">
+              <i class="fas fa-user"></i>
+              Imiê/pseudonim: <span style="color: var(--primary-red);">*</span>
+            </label>
+            <input
+              type="text"
+              id="comment-author"
+              class="form-input"
+              placeholder="Jak chcesz byæ podpisany?"
+              maxlength="50"
+            />
+            <div id="author-error" class="error-message" style="display: none;">
+              <i class="fas fa-exclamation-triangle error-icon"></i>
+              <span></span>
+            </div>
+          </div>
+
+          <button type="submit" class="modern-btn btn-primary" style="width: 100%; margin-top: 1rem;">
+            <i class="fas fa-paper-plane"></i>
+            Dodaj opiniê
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">£adowanie danych...</div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Dane województw z zabytkami kulturowymi dla ka¿dego regionu
+    const WOJ_MIASTA = {
+      "Dolnoœl¹skie": {
+        cities: ["Wroc³aw", "Wa³brzych", "Legnica", "Jelenia Góra", "Lubin", "G³ogów", "Œwidnica", "Boles³awiec", "Oleœnica", "Dzier¿oniów", "Zgorzelec", "Jawor", "Nowa Ruda", "K³odzko", "Œroda Œl¹ska", "Bielawa", "O³awa", "Z¹bkowice Œl¹skie", "Œwiebodzice", "Kamienna Góra", "Strzegom", "Lubañ", "Z³otoryja", "Chojnów", "Brzeg Dolny", "Góra", "Milicz", "Polkowice", "Kowary", "Kudowa-Zdrój", "Polanica-Zdrój", "Duszniki-Zdrój", "L¹dek-Zdrój", "Pi³awa Górna", "Pieszyce", "Bystrzyca K³odzka", "Lwówek Œl¹ski", "Trzebnica", "¯migród", "Wo³ów", "Syców", "Miêdzybórz", "Twardogóra", "Bierutów", "Jelcz-Laskowice", "Sobótka", "K¹ty Wroc³awskie", "Siechnice", "Boguszów-Gorce", "Jedlina-Zdrój", "Szczawno-Zdrój", "Szklarska Porêba", "Karpacz", "Stronie Œl¹skie", "Miêdzylesie", "Leœna", "Gryfów Œl¹ski", "Mirsk", "Pieñsk", "Wêgliniec", "Bogatynia", "Zawidów", "Nowogrodziec", "Bolków", "Marciszów", "Wojcieszów", "Œwierzawa", "Pielgrzymka", "Wi¹zów", "Bardo", "Ziêbice", "Niemcza", "Radków", "Szczytna", "Mieroszów", "G³uszyca", "Walim", "Olszyna", "Prochowice", "Przemków", "Chocianów", "Œcinawa", "W¹sosz", "¯arów", "Kliczków", "Polanica", "Œwierzawa", "Z³oty Stok", "Biedrzychowice", "W¹dro¿e Wielkie", "Lubiechowa", "Henryków", "Bystrzyca Górna", "L¹dek-Zdrój", "Podgórzyn", "Mys³akowice", "Cieplice Œl¹skie", "Bolków", "Wleñ", "Grodziec", "Prochowice"]
+      },
+      "Kujawsko-Pomorskie": {
+        cities: ["Bydgoszcz", "Toruñ", "W³oc³awek", "Grudzi¹dz", "Inowroc³aw", "Brodnica", "Œwiecie", "¯nin", "Nak³o nad Noteci¹", "Rypin", "Solec Kujawski", "Che³mno", "Golub-Dobrzyñ", "Tuchola", "Sêpólno Krajeñskie", "W¹brzeŸno", "Aleksandrów Kujawski", "Ciechocinek", "Mogilno", "Janikowo", "Kruszwica", "Strzelno", "Gniewkowo", "Barcin", "Pakoœæ", "Kcynia", "Szubin", "£abiszyn", "Koronowo", "Nowe", "Che³m¿a", "Kowalewo Pomorskie", "Radzyñ Che³miñski", "£asin", "Radziejów", "Piotrków Kujawski", "Brzeœæ Kujawski", "Kowal", "Izbica Kujawska", "Chodecz", "Lubraniec", "Lipno", "Skêpe", "Dobrzyñ nad Wis³¹", "Mrocza", "Wiêcbork", "Kamieñ Krajeñski", "Jab³onowo Pomorskie", "Zbiczno", "Górzno", "Nieszawa", "Lubieñ Kujawski", "Dobre"],
+      },
+      "Lubelskie": {
+        cities: ["Lublin", "Che³m", "Zamoœæ", "Bia³a Podlaska", "Pu³awy", "Kraœnik", "£uków", "Œwidnik", "Dêblin", "£êczna", "Hrubieszów", "Tomaszów Lubelski", "Parczew", "W³odawa", "Krasnystaw", "Lubartów", "Miêdzyrzec Podlaski", "Radzyñ Podlaski", "Bi³goraj", "Janów Lubelski", "Opole Lubelskie", "Poniatowa", "Ryki", "Terespol", "Stoczek £ukowski", "Be³¿yce", "Bychawa", "Na³êczów", "Kazimierz Dolny", "Rejowiec Fabryczny", "Piaski", "Tarnogród", "Krasnobród", "Józefów", "Szczebrzeszyn", "Zwierzyniec", "Frampol", "£aszczów", "Tyszowce", "Kock", "Ostrów Lubelski", "Urzêdów", "Annopol", "Józefów nad Wis³¹", "Modliborzyce", "Rejowiec", "Siedliszcze", "Krynice", "Urszulin", "Stê¿yca"],
+      },
+      "Lubuskie": {
+        cities: ["Zielona Góra", "Gorzów Wielkopolski", "Nowa Sól", "¯ary", "¯agañ", "Œwiebodzin", "Sulechów", "Miêdzyrzecz", "Kostrzyn nad Odr¹", "Gubin", "S³ubice", "Wschowa", "Szprotawa", "Lubsko", "Drezdenko", "Strzelce Krajeñskie", "Skwierzyna", "Sulêcin", "Oœno Lubuskie", "Krosno Odrzañskie", "Witnica", "Babimost", "Czerwieñsk", "Nowogród Bobrzañski", "Ko¿uchów", "Bytom Odrzañski", "Zb¹szynek", "Zb¹szyñ", "Jasieñ", "I³owa", "Ma³omice", "Gozdnica", "£êknica", "¯agañ", "S³awa", "Rzepin", "Cybinka", "Torzym", "Lubniewice", "Dobiegniew", "Trzciel", "Kargowa", "Otyñ", "Szlichtyngowa"],
+      },
+      "£ódzkie": {
+        cities: ["£ódŸ", "Piotrków Trybunalski", "Pabianice", "Be³chatów", "Zgierz", "Tomaszów Mazowiecki", "Sieradz", "Kutno", "Skierniewice", "Ozorków", "Radomsko", "£ask", "Brzeziny", "Wieluñ", "Zduñska Wola", "£owicz", "Konstantynów £ódzki", "Aleksandrów £ódzki", "Opoczno", "Rawa Mazowiecka", "£êczyca", "Koluszki", "G³owno", "Tuszyn", "Zelów", "Wieruszów", "Pajêczno", "Sulejów", "Poddêbice", "Przedbórz", "Kroœniewice", "¯ychlin", "Dzia³oszyn", "Z³oczew", "Bia³a Rawska", "Drzewica", "Uniejów", "Wolbórz", "Kamieñsk", "Stryków", "Rzgów", "B³aszki", "Warta", "Szadek", "Strzelce", "Ksawerów", "Dru¿bice"],
+      },
+      "Ma³opolskie": {
+        cities: ["Kraków", "Tarnów", "Nowy S¹cz", "Oœwiêcim", "Chrzanów", "Olkusz", "Zakopane", "Wadowice", "Andrychów", "Skawina", "Bochnia", "Gorlice", "Kêty", "Myœlenice", "Brzeszcze", "Wieliczka", "Miechów", "Libi¹¿", "Krzeszowice", "Trzebinia", "Nowy Targ", "Brzesko", "Proszowice", "Sucha Beskidzka", "Wolbrom", "D¹browa Tarnowska", "Stary S¹cz", "Krynica-Zdrój", "Muszyna", "Piwniczna-Zdrój", "Szczawnica", "Grybów", "Tuchów", "Ryglice", "Wojnicz", "Radlów", "¯abno", "Czchów", "Nowe Brzesko", "Koszyce", "Maków Podhalañski", "Jordanów", "Rabka-Zdrój", "Mszana Dolna", "Limanowa", "Dobczyce", "Su³kowice", "S³omniki", "Niepo³omice", "Bukowno", "Szczucin", "Zakliczyn", "Ciê¿kowice", "Bobowa", "Biecz", "Zator", "Kalwaria Zebrzydowska", "Alwernia"],
+      },
+      "Mazowieckie": {
+        cities: ["Warszawa", "Radom", "P³ock", "Siedlce", "Pruszków", "Legionowo", "Ostro³êka", "Z¹bki", "Piaseczno", "Marki", "Wo³omin", "Piastów", "Sochaczew", "Ciechanów", "Miñsk Mazowiecki", "Otwock", "M³awa", "Grodzisk Mazowiecki", "Nowy Dwór Mazowiecki", "O¿arów Mazowiecki", "Wyszków", "Pu³tusk", "Józefów", "Koby³ka", "Konstancin-Jeziorna", "Zielonka", "Mi³anówek", "Brwinów", "Radzymiñ", "£omianki", "B³onie", "Góra Kalwaria", "Sulejówek", "Halinów", "Karczew", "Gostynin", "Sierpc", "P³oñsk", "Przasnysz", "Maków Mazowiecki", "Wyszogród", "Nasielsk", "Zakroczym", "Serock", "T³uszcz", "Radzymiñ Mazowiecki", "Garwolin", "Pilawa", "Kozienice", "Zwoleñ", "Pionki", "I¿a", "Bia³obrzegi", "Przysucha", "Szyd³owiec", "Warka", "Grójec", "Mogielnica", "Nowe Miasto nad Pilic¹", "Mszczonów", "¯yrardów", "Raszyn", "Podkowa Leœna", "Chynów", "Tarczyn", "Nadarzyn"],
+      },
+      "Opolskie": {
+        cities: ["Opole", "Kêdzierzyn-KoŸle", "Nysa", "Brzeg", "Kluczbork", "Prudnik", "Strzelce Opolskie", "Krapkowice", "G³ubczyce", "Namys³ów", "Ozimek", "Zdzieszowice", "G³ogówek", "Niemodlin", "Paczków", "Otmuchów", "Gogolin", "Leœnica", "Ujazd", "Kolonowskie", "Bia³a", "Korfantów", "Baborów", "Kietrz", "Zawadzkie", "Dobrodzien", "Wo³czów", "Byczyna", "Praszka", "Gorzów Œl¹ski", "Zêbowice", "Pokój", "Komprachcice", "Niemodlin", "£ambinowice", "Skoroszyce", "D¹browa", "Murów", "Lubsza", "Chrz¹stowice", "Tu³owice", "£osiów", "Reñska Wieœ", "Czarnow¹sy", "Popielów", "B³êdów", "Domaszowice", "Walce", "Izbicko"],
+      },
+      "Podkarpackie": {
+        cities: ["Rzeszów", "Przemyœl", "Stalowa Wola", "Mielec", "Tarnobrzeg", "Krosno", "Jaros³aw", "Sanok", "Dêbica", "£añcut", "Jas³o", "Przeworsk", "Ropczyce", "Le¿ajsk", "Nisko", "Lubaczów", "Ustrzyki Dolne", "Lesko", "Brzozów", "Strzy¿ów", "Kolbuszowa", "Sêdziszów Ma³opolski", "Radoœl", "G³ogów Ma³opolski", "Soko³ów Ma³opolski", "Rudnik nad Sanem", "Ulanów", "Baranów Sandomierski", "Kañczuga", "Sieniawa", "Radymno", "Dynów", "B³a¿owa", "Tyczyn", "Rymanów", "Dukla", "Jedlicze", "Iwonicz-Zdrój", "Ko³aczyce", "Pilzno", "Czudec", "Niebylec", "Zagórz", "Oleszyce", "Narol", "Cieszanów", "Nowa Dêba", "Nowa Sarzyna", "Przec³aw", "Radomyœl Wielki"],
+      },
+      "Podlaskie": {
+        cities: ["Bia³ystok", "£om¿a", "Suwa³ki", "Augustów", "Grajewo", "Hajnówka", "Zambrów", "Bielsk Podlaski", "Sokó³ka", "Wysokie Mazowieckie", "Moñki", "Sejny", "Kolno", "Siemiatycze", "D¹browa Bia³ostocka", "Supraœl", "Wasilków", "Czarna Bia³ostocka", "Choroszcz", "£apy", "Nowogród", "Jedwabne", "Stawiski", "Knyszyn", "Goni¹dz", "Suchowola", "Krynki", "Lipsk", "Szczuczyn", "Rajgród", "Brañsk", "Ciechanowiec", "Czy¿ew", "Kleszczele", "Drohiczyn", "Tykocin", "Zab³udów", "Micha³owo", "Sura¿", "Bia³owie¿a", "Narew", "Turoœñ Koœcielna", "Juchnowiec Koœcielny", "Boæki", "Rudka", "Czeremcha", "Narewka", "Dubicze Cerkiewne", "Orla", "Kruszyniany", "Krynki", "Filipów", "Punsk", "Przeroœl", "Giby", "Rutka-Tartak", "Raczki", "Szypliszki", "Wi¿ajny", "Go³dap"],
+      },
+      "Pomorskie": {
+        cities: ["Gdañsk", "Gdynia", "S³upsk", "Sopot", "Tczew", "Starogard Gdañski", "Wejherowo", "Rumia", "Reda", "Pruszcz Gdañski", "Lêbork", "Malbork", "Koœcierzyna", "Kartuzy", "Chojnice", "Kwidzyn", "Sztum", "Puck", "W³adys³awowo", "Jastarnia", "Hel", "Ustka", "£eba", "Bytow", "Cz³uchów", "Gniew", "Pe³plin", "Skarszewy", "Skórcz", "Czarna Woda", "Brusy", "Dzierzgon", "Prabuty", "Nowy Dwór Gdañski", "Krynica Morska", "Czersk", "¯ukowo", "Koscierzyna", "Debrzno", "Czarne", "Jastrzêbia Góra", "Karwia"],
+      },
+      "Œl¹skie": {
+        cities: ["Katowice", "Czêstochowa", "Sosnowiec", "Gliwice", "Zabrze", "Bytom", "Ruda Œl¹ska", "Tychy", "D¹browa Górnicza", "Chorzów", "Jaworzno", "Jastrzêbie-Zdrój", "Mys³owice", "Siemianowice Œl¹skie", "¯ory", "Œwiêtoch³owice", "Bêdzin", "Piekary Œl¹skie", "Tarnowskie Góry", "Bielsko-Bia³a", "Racibórz", "CzeladŸ", "Rybnik", "Miko³ów", "Knurów", "W³adys³awice", "Pszczyna", "Czechowice-Dziedzice", "Oœwiêcim", "¯ywiec", "Rydultowy", "Cieszyñ", "Ustron", "Wis³a", "Skoczów", "Bierun", "Radlin", "Wodzis³aw Œl¹ski", "Czerwionka-Leszczyny", "Radzionków", "Œwierklany", "Ledziny", "Wojkowice", "Siewierz", "Sosz³owice", "Orzeszów", "Kozieg³owy", "Poczesna", "Krzepice", "K³obuck", "Myszków", "¯arki", "Koniecpol", "Blachownia", "Szczekociny", "Kazimierz Górniczy", "£azy", "Ogrodzieniec", "Pilica", "Worek", "Krzanowice", "KuŸnia Raciborska", "Toszek", "Pyskowice", "Sosnicowice", "Ujazd", "Kalety", "Miasteczko Œl¹skie", "Szczyrk", "Buczkowice", "Wilamowice", "Koz³y", "Poreby", "Bêdziny"],
+      },
+      "Œwiêtokrzyskie": {
+        cities: ["Kielce", "Ostrowiec Œwiêtokrzyski", "Starachowice", "Skar¿ysko-Kamienna", "Koñskie", "Sandomierz", "Jêdrzejów", "Busko-Zdrój", "Sopoœcice", "W³oszczowa", "Staszów", "Opatow", "Piñczów", "Po³aniec", "Kazimierza Wielka", "Suched³ów", "M¹³ogoszcz", "Chêciny", "Daleszyce", "Kunców", "O¿arow", "Zawichost", "Koprzywnica", "Osiek", "Pacanów", "Wodzis³aw", "Stopnica", "Chmielnik", "Staporkuów", "Bodzentyn", "£agów", "Nowa S³upia", "Wielebnow", "Dzia³oszyce", "Soko³ów", "Miêdzygórz"],
+      },
+      "Warmiñsko-Mazurskie": {
+        cities: ["Olsztyn", "Elbl¹g", "E³k", "Ostróda", "I³awa", "Kêtrzyn", "Gi¿ycko", "Braniewo", "Mr¹gowo", "Bartoszyce", "Lidzbark Warmiñski", "Szczytno", "Pisz", "Nidzica", "Dzia³dowo", "Nowe Miasto Lubawskie", "Goldap", "Olecko", "Wêgorzewo", "Lubawa", "Morong", "Pas³êk", "Orneta", "Biskupiec", "Dobre Miasto", "Barczewo", "Jeziorany", "Reszel", "Korsze", "Bisztynek", "Susz", "Kisielice", "Zalewo", "Mi³akowo", "Mi³om³yn", "Tolkmicko", "Frombork", "Pieniê¿no", "Górowo I³aweckie", "Sepolno I³aweckie", "Orzysz", "Ruciane-Nida", "Miko³ajki", "Ryn", "Bi³goraj", "Lidzbark", "Malbork"],
+      },
+      "Wielkopolskie": {
+        cities: ["Poznañ", "Kalisz", "Konin", "Leszno", "Gniezno", "Pi³a", "Ostrów Wielkopolski", "Krotoszyn", "Turek", "Jarocin", "Œrem", "Swarzêdz", "Luboñ", "Mosina", "Wrzeœnia", "Ko³o", "S³upca", "Wagrowiec", "Oborniku", "Wolsztyn", "Koscian", "Gostyñ", "KoŸmin Wielkopolski", "Pleszew", "Witkowo", "RogoŸno", "Trzemeszno", "Kleparz", "Murowana Goœlina", "Puszczykowo", "Kórnik", "Buk", "Kostrzyn", "Pobiedziska", "Streszów", "Opalenica", "Nowy Tomyœl", "Zbasyñ", "Grzywna", "Grodzisk Wielkopolski", "Rakoniewice", "Wielichowo", "Knêpowo", "Miedzychod", "Sierakow", "Wronki", "Szamotu³y", "Pniewy", "Kapiel", "Krajenka", "Z³otów", "Jastrowice", "Ujscie", "Chodzie¿", "Margonin", "Czarnkow", "Trzcianka", "Wie³eñ", "Krzy¿ Wielkopolski", "Drawsko", "Rawicko", "Borek Wielkopolski", "Poniec", "Kroœnice", "Miejska Górka", "Jutrosin", "Sieraki", "Mieszków", "Czempinio", "Brodniæ", "Dolsk", "Kleczów", "Stawiszyn", "Gozdowo", "Pyzdry", "Zagrow", "Rych³y", "Lwówek", "Œlesin", "Kleczew", "Sompolno", "Golina", "Kazimierz Biskupi", "Wilczyn", "Orchowo", "Ostrzeszów", "Mikolajow", "Grabowo nad Prosno", "Dorgon", "Olszówka", "Nekla", "Czerniejewo", "Kepno", "Soboty"],
+      },
+      "Zachodniopomorskie": {
+        cities: ["Szczecin", "Koszalin", "Stargard", "Ko³obrzeg", "Œwinoujœcie", "Szczecinek", "Wa³cz", "Œwidwin", "Bia³ogard", "Gryfino", "Kamieñ Pomorski", "£obez", "Myœlibórz", "Goleniów", "Nowogard", "Police", "Gryfice", "Trzebiatów", "Dar³owo", "S³awno", "Ustka", "Sianów", "Polany", "Bobolice", "Barwice", "Borne Sulinowo", "Czaplinek", "Drawsko Pomorskie", "Ka³uszko", "Zlotocieniec", "Miros³awiec", "Tuczno", "P³oty", "Resko", "Wegrzyno", "Dobra", "Chocin", "Radow Ma³e", "Maszewo", "Golczewo", "Stepnica", "Miêdzyzdroje", "Wolin", "Dziwnów", "Rewal", "Pogorzelica", "Niechorze", "Trzebósz", "Mielno", "Ustrón Morski", "Sarbinowo", "Dbrzno", "Iñsko", "Pó³czno", "Recz", "Salino", "Dobrzany", "Wieduchowa", "Chojnino", "Trzciñsko-Zdrój", "Cedynia", "Mozyno", "Mieszkowice", "Debno", "Barlinek", "Pe³czyce", "Lipiany", "Pyrzyce", "Bielice", "Kozielice", "Warnice", "Stare Czarnowo"],
+      }
+    };
+
+    // Wspó³rzêdne wszystkich polskich miast
+    const CITY_COORDINATES = {
+      // Dolnoœl¹skie
+      "Wroc³aw": { lat: 51.1079, lng: 17.0385 },
+      "Wa³brzych": { lat: 50.7842, lng: 16.2844 },
+      "Legnica": { lat: 51.2071, lng: 16.1559 },
+      "Jelenia Góra": { lat: 50.8977, lng: 15.7213 },
+      "Lubin": { lat: 51.4002, lng: 16.2008 },
+      "G³ogów": { lat: 51.6654, lng: 16.0842 },
+      "Œwidnica": { lat: 50.8456, lng: 16.4967 },
+      "Boles³awiec": { lat: 51.2624, lng: 15.5697 },
+      "Oleœnica": { lat: 51.2097, lng: 17.3783 },
+      "Dzier¿oniów": { lat: 50.7317, lng: 16.6564 },
+      "Zgorzelec": { lat: 51.0504, lng: 15.0061 },
+      "Jawor": { lat: 51.0552, lng: 16.1919 },
+      "Nowa Ruda": { lat: 50.5836, lng: 16.4925 },
+      "K³odzko": { lat: 50.4351, lng: 16.6546 },
+      "Œroda Œl¹ska": { lat: 51.1727, lng: 16.8643 },
+      "Z¹bkowice Œl¹skie": { lat: 50.5927, lng: 16.8143 },
+      "K³odzko": { lat: 50.4351, lng: 16.6546 },
+      "Nysa": { lat: 50.4737, lng: 17.3335 },
+      "Prudnik": { lat: 50.3232, lng: 17.5859 },
+      "Kamieniec Z¹bkowicki": { lat: 50.4327, lng: 16.8743 },
+      "Bielawa": { lat: 50.6927, lng: 16.6343 },
+      "O³awa": { lat: 50.9427, lng: 17.2943 },
+      "Œwiebodzice": { lat: 50.8627, lng: 16.3243 },
+      "Kamienna Góra": { lat: 50.7827, lng: 16.0343 },
+      "Strzegom": { lat: 50.9627, lng: 16.3543 },
+      "Lubañ": { lat: 51.1227, lng: 15.2843 },
+      "Z³otoryja": { lat: 51.1227, lng: 15.9243 },
+      "Chojnów": { lat: 51.2827, lng: 15.9343 },
+      "Brzeg Dolny": { lat: 51.0327, lng: 16.7443 },
+      "Góra": { lat: 51.6527, lng: 16.0843 },
+      "Milicz": { lat: 51.5227, lng: 17.2243 },
+      "Polkowice": { lat: 51.4927, lng: 16.0743 },
+      "Kowary": { lat: 50.7927, lng: 15.8443 },
+      "Kudowa-Zdrój": { lat: 50.4427, lng: 16.2443 },
+      "Polanica-Zdrój": { lat: 50.4127, lng: 16.5143 },
+      "Duszniki-Zdrój": { lat: 50.3927, lng: 16.3843 },
+      "L¹dek-Zdrój": { lat: 50.3427, lng: 16.8743 },
+      "Pi³awa Górna": { lat: 50.5927, lng: 16.4443 },
+      "Pieszyce": { lat: 50.7327, lng: 16.2743 },
+      "Bystrzyca K³odzka": { lat: 50.2927, lng: 16.6443 },
+      "Lwówek Œl¹ski": { lat: 51.1027, lng: 15.5943 },
+      "Trzebnica": { lat: 51.3127, lng: 17.0643 },
+      "¯migród": { lat: 51.4727, lng: 16.9143 },
+      "Wo³ów": { lat: 51.3427, lng: 16.6343 },
+      "Syców": { lat: 51.3027, lng: 17.7243 },
+      "Twardogóra": { lat: 51.3827, lng: 17.4643 },
+      "Bierutów": { lat: 51.1627, lng: 17.5343 },
+      "K¹ty Wroc³awskie": { lat: 51.0127, lng: 16.7743 },
+      "Siechnice": { lat: 50.9927, lng: 17.1943 },
+      "Szklarska Porêba": { lat: 50.8227, lng: 15.5143 },
+      "Karpacz": { lat: 50.7727, lng: 15.7443 },
+      "Stronie Œl¹skie": { lat: 50.2927, lng: 16.8743 },
+      "Miêdzylesie": { lat: 50.1627, lng: 16.6543 },
+      "Leœna": { lat: 51.0327, lng: 15.1443 },
+      "Gryfów Œl¹ski": { lat: 50.9527, lng: 15.5243 },
+      "Mirsk": { lat: 50.9727, lng: 15.3943 },
+      "Pieñsk": { lat: 51.0527, lng: 14.8143 },
+      "Wêgliniec": { lat: 51.2827, lng: 15.2043 },
+      "Bogatynia": { lat: 50.9027, lng: 14.9543 },
+      "Zawidów": { lat: 50.9627, lng: 14.7943 },
+      "Nowogrodziec": { lat: 51.1727, lng: 15.5643 },
+      "Bolków": { lat: 50.9327, lng: 16.0943 },
+      "Marciszów": { lat: 50.8827, lng: 15.8543 },
+      "Wojcieszów": { lat: 51.0027, lng: 15.9243 },
+      "Œwierzawa": { lat: 51.0227, lng: 15.5343 },
+      "Wi¹zów": { lat: 50.9127, lng: 16.9843 },
+      "Bardo": { lat: 50.4927, lng: 16.7643 },
+      "Ziêbice": { lat: 50.6127, lng: 17.0443 },
+      "Niemcza": { lat: 50.6827, lng: 16.9143 },
+      "Radków": { lat: 50.3827, lng: 16.8343 },
+      "Szczytna": { lat: 50.4027, lng: 16.8943 },
+      "Mieroszów": { lat: 50.6627, lng: 16.1843 },
+      "G³uszyca": { lat: 50.6827, lng: 16.3643 },
+      "Walim": { lat: 50.7027, lng: 16.4343 },
+      "Olszyna": { lat: 51.0827, lng: 15.0343 },
+      "Prochowice": { lat: 51.0227, lng: 16.0643 },
+      "Przemków": { lat: 51.5427, lng: 15.7843 },
+      "Chocianów": { lat: 51.4827, lng: 15.9443 },
+      "Œcinawa": { lat: 51.4227, lng: 16.2843 },
+      "W¹sosz": { lat: 51.3727, lng: 15.7443 },
+      "¯arów": { lat: 50.9927, lng: 16.4743 },
+      "Kliczków": { lat: 51.2627, lng: 15.4143 },
+      "Z³oty Stok": { lat: 50.4227, lng: 16.8643 },
+      "Sobótka": { lat: 50.8827, lng: 16.7343 },
+      "Jelcz-Laskowice": { lat: 51.0427, lng: 17.3343 },
+      "Boguszów-Gorce": { lat: 50.7527, lng: 16.2043 },
+      "Jedlina-Zdrój": { lat: 50.7227, lng: 16.0843 },
+      "Szczawno-Zdrój": { lat: 50.7927, lng: 16.2243 },
+      "Podgórzyn": { lat: 50.8327, lng: 15.7243 },
+      "Mys³akowice": { lat: 50.8927, lng: 15.7643 },
+      "Wleñ": { lat: 51.0727, lng: 15.6543 },
+      "Grodziec": { lat: 51.1527, lng: 15.6343 },
+      "Biedrzychowice": { lat: 51.1227, lng: 15.3443 },
+      "W¹dro¿e Wielkie": { lat: 51.2527, lng: 15.1443 },
+      "Lubiechowa": { lat: 51.0827, lng: 14.9243 },
+      "Henryków": { lat: 50.6527, lng: 16.9543 },
+      "Bystrzyca Górna": { lat: 50.3727, lng: 16.6443 },
+      "Cieplice Œl¹skie": { lat: 50.8227, lng: 15.6943 },
+
+      // Kujawsko-Pomorskie
+      "Bydgoszcz": { lat: 53.1235, lng: 18.0084 },
+      "Toruñ": { lat: 53.0138, lng: 18.5984 },
+      "W³oc³awek": { lat: 52.6482, lng: 19.0677 },
+      "Grudzi¹dz": { lat: 53.4838, lng: 18.7537 },
+      "Inowroc³aw": { lat: 52.7988, lng: 18.2583 },
+      "Brodnica": { lat: 53.2590, lng: 19.3995 },
+      "Œwiecie": { lat: 53.4101, lng: 18.4497 },
+      "¯nin": { lat: 52.8460, lng: 17.7242 },
+      "Nak³o nad Noteci¹": { lat: 53.1372, lng: 17.5998 },
+      "Rypin": { lat: 53.0710, lng: 19.4051 },
+      "Solec Kujawski": { lat: 52.6946, lng: 18.2153 },
+      "Che³mno": { lat: 53.3487, lng: 18.4236 },
+      "Golub-Dobrzyñ": { lat: 53.1088, lng: 19.0426 },
+      "Tuchola": { lat: 53.5862, lng: 17.8548 },
+      "Sêpólno Krajeñskie": { lat: 53.4156, lng: 17.3886 },
+      "W¹brzeŸno": { lat: 53.2849, lng: 18.9355 },
+      "Aleksandrów Kujawski": { lat: 52.8789, lng: 18.6951 },
+      "Ciechocinek": { lat: 52.8780, lng: 18.7945 },
+      "Mogilno": { lat: 52.6623, lng: 17.9502 },
+      "Janikowo": { lat: 52.7479, lng: 17.6911 },
+      "Kruszwica": { lat: 52.6769, lng: 18.3187 },
+      "Strzelno": { lat: 52.6286, lng: 18.1689 },
+      "Gniewkowo": { lat: 52.8945, lng: 18.4265 },
+      "Barcin": { lat: 52.8572, lng: 17.9486 },
+      "Pakoœæ": { lat: 52.8088, lng: 18.0936 },
+      "Kcynia": { lat: 52.5913, lng: 17.9939 },
+      "Szubin": { lat: 53.0126, lng: 17.7652 },
+      "£abiszyn": { lat: 52.9517, lng: 17.7286 },
+      "Koronowo": { lat: 53.3166, lng: 17.9357 },
+      "Nowe": { lat: 53.2634, lng: 18.7235 },
+      "Che³m¿a": { lat: 53.1853, lng: 18.6045 },
+      "Kowalewo Pomorskie": { lat: 53.2076, lng: 18.9045 },
+      "Radzyñ Che³miñski": { lat: 53.3899, lng: 18.9345 },
+      "£asin": { lat: 53.5234, lng: 19.0845 },
+      "Radziejów": { lat: 52.6123, lng: 18.5045 },
+      "Piotrków Kujawski": { lat: 52.5934, lng: 19.3145 },
+      "Brzeœæ Kujawski": { lat: 52.6045, lng: 19.1345 },
+      "Kowal": { lat: 52.9145, lng: 19.1845 },
+      "Izbica Kujawska": { lat: 52.4145, lng: 18.7845 },
+      "Chodecz": { lat: 52.4045, lng: 19.0345 },
+      "Lubraniec": { lat: 52.4945, lng: 18.8345 },
+      "Lipno": { lat: 52.8445, lng: 19.1845 },
+      "Skêpe": { lat: 52.9345, lng: 19.3345 },
+      "Dobrzyñ nad Wis³¹": { lat: 52.6145, lng: 19.3645 },
+      "Mrocza": { lat: 53.4645, lng: 17.5645 },
+      "Wiêcbork": { lat: 53.5545, lng: 17.1945 },
+      "Kamieñ Krajeñski": { lat: 53.5245, lng: 17.4645 },
+      "Jab³onowo Pomorskie": { lat: 53.0545, lng: 19.2145 },
+      "Zbiczno": { lat: 52.9245, lng: 18.9645 },
+      "Górzno": { lat: 53.1745, lng: 19.5145 },
+      "Nieszawa": { lat: 52.8345, lng: 18.8945 },
+      "Lubieñ Kujawski": { lat: 52.4745, lng: 18.6645 },
+      "Dobre": { lat: 53.0345, lng: 18.8545 },
+
+      // Lubelskie
+      "Lublin": { lat: 51.2465, lng: 22.5684 },
+      "Che³m": { lat: 51.1432, lng: 23.4716 },
+      "Zamoœæ": { lat: 50.7232, lng: 23.2519 },
+      "Bia³a Podlaska": { lat: 52.0324, lng: 23.1165 },
+      "Pu³awy": { lat: 51.4164, lng: 21.9692 },
+      "Kraœnik": { lat: 50.9242, lng: 22.2049 },
+      "£uków": { lat: 51.9306, lng: 22.3830 },
+      "Œwidnik": { lat: 51.2192, lng: 22.6951 },
+      "Dêblin": { lat: 51.5514, lng: 21.8530 },
+      "£êczna": { lat: 51.3003, lng: 22.8837 },
+      "Hrubieszów": { lat: 50.8054, lng: 23.8928 },
+      "Tomaszów Lubelski": { lat: 50.4479, lng: 23.4161 },
+      "Parczew": { lat: 51.6378, lng: 22.9014 },
+      "W³odawa": { lat: 51.5522, lng: 23.5518 },
+      "Radzyñ Podlaski": { lat: 51.7822, lng: 22.6218 },
+      "Terespol": { lat: 52.0722, lng: 23.6118 },
+      "Miêdzyrzec Podlaski": { lat: 51.9822, lng: 22.7818 },
+      "Rejowiec Fabryczny": { lat: 51.3522, lng: 23.2518 },
+      "Krasnystaw": { lat: 51.0022, lng: 23.1818 },
+      "Lubartów": { lat: 51.4622, lng: 22.6118 },
+      "Bi³goraj": { lat: 50.5422, lng: 22.7218 },
+      "Janów Lubelski": { lat: 50.7022, lng: 22.4018 },
+      "Opole Lubelskie": { lat: 51.1522, lng: 21.9718 },
+      "Poniatowa": { lat: 51.1822, lng: 22.0618 },
+      "Ryki": { lat: 51.6322, lng: 21.9318 },
+      "Stoczek £ukowski": { lat: 51.9622, lng: 22.0118 },
+      "Be³¿yce": { lat: 51.1722, lng: 22.3018 },
+      "Bychawa": { lat: 51.3122, lng: 22.5318 },
+      "Na³êczów": { lat: 51.2822, lng: 22.2118 },
+      "Kazimierz Dolny": { lat: 51.3222, lng: 21.9518 },
+      "Piaski": { lat: 51.1922, lng: 22.8418 },
+      "Tarnogród": { lat: 50.3522, lng: 22.7418 },
+      "Krasnobród": { lat: 50.5322, lng: 23.2018 },
+      "Józefów": { lat: 50.2422, lng: 23.4018 },
+      "Szczebrzeszyn": { lat: 50.7022, lng: 22.9818 },
+      "Zwierzyniec": { lat: 50.6122, lng: 22.9718 },
+      "Frampol": { lat: 50.6822, lng: 22.6718 },
+      "£aszczów": { lat: 50.5022, lng: 23.9018 },
+      "Tyszowce": { lat: 50.6322, lng: 23.7318 },
+      "Kock": { lat: 51.6422, lng: 22.4518 },
+      "Ostrów Lubelski": { lat: 51.4222, lng: 22.1318 },
+      "Urzêdów": { lat: 50.9922, lng: 22.1718 },
+      "Annopol": { lat: 50.8822, lng: 21.8618 },
+      "Józefów nad Wis³¹": { lat: 50.7522, lng: 21.9318 },
+      "Modliborzyce": { lat: 50.7822, lng: 22.3318 },
+      "Rejowiec": { lat: 51.3322, lng: 23.2318 },
+      "Siedliszcze": { lat: 51.4822, lng: 23.6318 },
+      "Krynice": { lat: 51.1322, lng: 23.9118 },
+      "Urszulin": { lat: 51.4322, lng: 23.4718 },
+      "Stê¿yca": { lat: 51.4922, lng: 23.6118 },
+
+      // Lubuskie
+      "Zielona Góra": { lat: 51.9356, lng: 15.5062 },
+      "Gorzów Wielkopolski": { lat: 52.7325, lng: 15.2369 },
+      "Nowa Sól": { lat: 51.8021, lng: 15.7218 },
+      "¯ary": { lat: 51.6417, lng: 15.1376 },
+      "Œwiebodzin": { lat: 52.2468, lng: 15.5365 },
+      "Sulechów": { lat: 52.0895, lng: 15.6188 },
+      "Miêdzyrzecz": { lat: 52.4433, lng: 15.5856 },
+      "Kostrzyn nad Odr¹": { lat: 52.5893, lng: 14.6564 },
+      "Gubin": { lat: 51.9495, lng: 14.7139 },
+      "Krosno Odrzañskie": { lat: 51.8895, lng: 15.0939 },
+      "S³ubice": { lat: 52.3595, lng: 14.5639 },
+      "¯agañ": { lat: 51.6177, lng: 15.3157 },
+      "Lubsko": { lat: 51.7695, lng: 14.9739 },
+      "Wschowa": { lat: 51.8095, lng: 16.0739 },
+      "Szprotawa": { lat: 51.5695, lng: 15.5339 },
+      "Drezdenko": { lat: 52.8495, lng: 15.8339 },
+      "Strzelce Krajeñskie": { lat: 52.8795, lng: 15.8539 },
+      "Skwierzyna": { lat: 52.5995, lng: 15.5039 },
+      "Sulêcin": { lat: 52.4395, lng: 15.1239 },
+      "Oœno Lubuskie": { lat: 52.4495, lng: 14.8739 },
+      "Witnica": { lat: 52.6795, lng: 14.9039 },
+      "Babimost": { lat: 52.1395, lng: 15.8239 },
+      "Czerwieñsk": { lat: 51.4895, lng: 15.3139 },
+      "Nowogród Bobrzañski": { lat: 51.9095, lng: 15.7239 },
+      "Ko¿uchów": { lat: 51.7395, lng: 15.5939 },
+      "Bytom Odrzañski": { lat: 51.6795, lng: 15.8139 },
+      "Zb¹szynek": { lat: 52.2595, lng: 15.9139 },
+      "Zb¹szyñ": { lat: 52.2495, lng: 15.9239 },
+      "Jasieñ": { lat: 51.9595, lng: 14.8339 },
+      "I³owa": { lat: 51.5995, lng: 15.2239 },
+      "Ma³omice": { lat: 51.5695, lng: 14.9939 },
+      "Gozdnica": { lat: 51.5495, lng: 15.1339 },
+      "£êknica": { lat: 51.5295, lng: 14.7739 },
+      "S³awa": { lat: 51.8795, lng: 16.0639 },
+      "Rzepin": { lat: 52.3495, lng: 14.8339 },
+      "Cybinka": { lat: 52.4095, lng: 14.7339 },
+      "Torzym": { lat: 52.3795, lng: 15.3339 },
+      "Lubniewice": { lat: 52.7595, lng: 15.2739 },
+      "Dobiegniew": { lat: 52.9695, lng: 15.7239 },
+      "Trzciel": { lat: 52.3695, lng: 15.8739 },
+      "Kargowa": { lat: 52.0695, lng: 15.8839 },
+      "Otyñ": { lat: 51.8395, lng: 15.2439 },
+      "Szlichtyngowa": { lat: 51.6595, lng: 16.1639 },
+
+      // £ódzkie
+      "£ódŸ": { lat: 51.7592, lng: 19.4560 },
+      "Piotrków Trybunalski": { lat: 51.4058, lng: 19.7034 },
+      "Pabianice": { lat: 51.6654, lng: 19.3564 },
+      "Be³chatów": { lat: 51.3677, lng: 19.3671 },
+      "Zgierz": { lat: 51.8562, lng: 19.4077 },
+      "Tomaszów Mazowiecki": { lat: 51.5309, lng: 20.0088 },
+      "Sieradz": { lat: 51.5951, lng: 18.7307 },
+      "Kutno": { lat: 52.2316, lng: 19.3640 },
+      "Skierniewice": { lat: 51.9537, lng: 20.1538 },
+      "Ozorków": { lat: 51.9679, lng: 19.2847 },
+      "Radomsko": { lat: 51.0656, lng: 19.4502 },
+      "£ask": { lat: 51.5901, lng: 19.1347 },
+      "Brzeziny": { lat: 51.7977, lng: 19.7565 },
+      "Wieluñ": { lat: 51.2187, lng: 18.5698 },
+      "Zduñska Wola": { lat: 51.6059, lng: 18.9359 },
+      "£owicz": { lat: 52.1059, lng: 19.9459 },
+      "Konstantynów £ódzki": { lat: 51.7459, lng: 19.3259 },
+      "Aleksandrów £ódzki": { lat: 51.8159, lng: 19.3059 },
+      "Opoczno": { lat: 51.3759, lng: 20.2759 },
+      "Rawa Mazowiecka": { lat: 51.7659, lng: 20.2559 },
+      "£êczyca": { lat: 52.0559, lng: 19.2059 },
+      "Koluszki": { lat: 51.7359, lng: 19.8159 },
+      "G³owno": { lat: 51.9659, lng: 19.7159 },
+      "Tuszyn": { lat: 51.6259, lng: 19.3759 },
+      "Zelów": { lat: 51.4459, lng: 19.1659 },
+      "Wieruszów": { lat: 51.2959, lng: 18.1559 },
+      "Pajêczno": { lat: 50.9959, lng: 19.1159 },
+      "Sulejów": { lat: 51.3559, lng: 19.8759 },
+      "Poddêbice": { lat: 52.0159, lng: 18.9759 },
+      "Przedbórz": { lat: 51.0959, lng: 20.1459 },
+      "Kroœniewice": { lat: 52.2459, lng: 19.1759 },
+      "¯ychlin": { lat: 52.2259, lng: 18.9659 },
+      "Dzia³oszyn": { lat: 51.2059, lng: 18.8159 },
+      "Z³oczew": { lat: 51.3359, lng: 18.4359 },
+      "Bia³a Rawska": { lat: 51.8059, lng: 20.4159 },
+      "Drzewica": { lat: 51.4759, lng: 20.4459 },
+      "Uniejów": { lat: 52.0659, lng: 18.7959 },
+      "Wolbórz": { lat: 51.5659, lng: 19.7759 },
+      "Kamieñsk": { lat: 51.2759, lng: 19.5359 },
+      "Stryków": { lat: 51.9259, lng: 19.6159 },
+      "Rzgów": { lat: 51.7159, lng: 19.5959 },
+      "B³aszki": { lat: 51.6359, lng: 18.2859 },
+      "Warta": { lat: 51.7259, lng: 18.7959 },
+      "Szadek": { lat: 51.6759, lng: 18.9859 },
+      "Strzelce": { lat: 51.3459, lng: 18.8859 },
+      "Ksawerów": { lat: 51.7759, lng: 19.5259 },
+      "Dru¿bice": { lat: 51.6059, lng: 18.6359 },
+
+      // Ma³opolskie
+      "Kraków": { lat: 50.0647, lng: 19.9450 },
+      "Tarnów": { lat: 50.0121, lng: 20.9858 },
+      "Nowy S¹cz": { lat: 49.6249, lng: 20.7144 },
+      "Oœwiêcim": { lat: 50.0348, lng: 19.2319 },
+      "Chrzanów": { lat: 50.1355, lng: 19.4015 },
+      "Olkusz": { lat: 50.2804, lng: 19.5610 },
+      "Zakopane": { lat: 49.2992, lng: 19.9496 },
+      "Wadowice": { lat: 49.8794, lng: 19.4840 },
+      "Andrychów": { lat: 49.8556, lng: 19.3406 },
+      "Skawina": { lat: 49.9695, lng: 19.8298 },
+      "Bochnia": { lat: 49.9691, lng: 20.4307 },
+      "Gorlice": { lat: 49.6556, lng: 21.1596 },
+      "Kêty": { lat: 49.8830, lng: 19.2288 },
+      "Myœlenice": { lat: 49.9364, lng: 19.9324 },
+      "Brzeszcze": { lat: 50.0115, lng: 19.1625 },
+      "Wieliczka": { lat: 49.9847, lng: 20.0659 },
+      "Miechów": { lat: 50.3547, lng: 20.0359 },
+      "Libi¹¿": { lat: 50.1047, lng: 19.3759 },
+      "Krzeszowice": { lat: 50.1447, lng: 19.6159 },
+      "Trzebinia": { lat: 50.1647, lng: 19.4659 },
+      "Nowy Targ": { lat: 49.4847, lng: 20.0359 },
+      "Brzesko": { lat: 49.9747, lng: 20.6159 },
+      "Proszowice": { lat: 50.1947, lng: 20.2459 },
+      "Sucha Beskidzka": { lat: 49.7447, lng: 19.5959 },
+      "Wolbrom": { lat: 50.3747, lng: 19.7659 },
+      "D¹browa Tarnowska": { lat: 50.1647, lng: 20.8359 },
+      "Stary S¹cz": { lat: 49.5647, lng: 20.6359 },
+      "Krynica-Zdrój": { lat: 49.4147, lng: 20.9659 },
+      "Muszyna": { lat: 49.3547, lng: 20.8959 },
+      "Piwniczna-Zdrój": { lat: 49.4347, lng: 20.7159 },
+      "Szczawnica": { lat: 49.4047, lng: 20.4659 },
+      "Grybów": { lat: 49.6147, lng: 20.9459 },
+      "Tuchów": { lat: 49.9047, lng: 20.8159 },
+      "Ryglice": { lat: 49.9447, lng: 21.0159 },
+      "Wojnicz": { lat: 49.9647, lng: 20.8459 },
+      "Rad³ów": { lat: 50.0247, lng: 20.9859 },
+      "¯abno": { lat: 50.0947, lng: 20.8859 },
+      "Czchów": { lat: 49.8447, lng: 20.7159 },
+      "Nowe Brzesko": { lat: 50.1247, lng: 20.5659 },
+      "Koszyce": { lat: 49.6847, lng: 21.1559 },
+      "Maków Podhalañski": { lat: 49.7147, lng: 19.6459 },
+      "Jordanów": { lat: 49.6647, lng: 19.8159 },
+      "Rabka-Zdrój": { lat: 49.6047, lng: 19.9659 },
+      "Mszana Dolna": { lat: 49.6747, lng: 20.0759 },
+      "Limanowa": { lat: 49.7047, lng: 20.4259 },
+      "Dobczyce": { lat: 49.8747, lng: 20.1259 },
+      "Su³kowice": { lat: 49.7847, lng: 19.6659 },
+      "S³omniki": { lat: 50.2547, lng: 20.0759 },
+      "Niepo³omice": { lat: 50.0347, lng: 20.2159 },
+      "Bukowno": { lat: 50.2847, lng: 19.4759 },
+      "Szczucin": { lat: 50.1047, lng: 20.7459 },
+      "Zakliczyn": { lat: 49.8547, lng: 20.8059 },
+      "Ciê¿kowice": { lat: 49.7247, lng: 20.9759 },
+      "Bobowa": { lat: 49.7347, lng: 20.9659 },
+      "Biecz": { lat: 49.7347, lng: 21.2559 },
+      "Zator": { lat: 50.0047, lng: 19.4359 },
+      "Kalwaria Zebrzydowska": { lat: 49.8647, lng: 19.6759 },
+      "Alwernia": { lat: 50.0859, lng: 19.5259 },
+      "Koscierzyna": { lat: 54.1258, lng: 17.9744 },
+      "Bytow": { lat: 54.1658, lng: 17.4944 },
+
+      // Mazowieckie
+      "Warszawa": { lat: 52.2297, lng: 21.0122 },
+      "Radom": { lat: 51.4027, lng: 21.1471 },
+      "P³ock": { lat: 52.5463, lng: 19.7065 },
+      "Siedlce": { lat: 52.1676, lng: 22.2902 },
+      "Pruszków": { lat: 52.1704, lng: 20.8067 },
+      "Legionowo": { lat: 52.4054, lng: 20.9304 },
+      "Ostro³êka": { lat: 53.0839, lng: 21.5654 },
+      "Z¹bki": { lat: 52.2946, lng: 21.1017 },
+      "Piaseczno": { lat: 52.0745, lng: 21.0254 },
+      "Marki": { lat: 52.3215, lng: 21.1056 },
+      "Wo³omin": { lat: 52.3407, lng: 21.2422 },
+      "Piastów": { lat: 52.1859, lng: 20.8374 },
+      "Sochaczew": { lat: 52.2331, lng: 20.2371 },
+      "Ciechanów": { lat: 52.8806, lng: 20.6120 },
+      "Miñsk Mazowiecki": { lat: 52.1794, lng: 21.5715 },
+      "Otwock": { lat: 52.1058, lng: 21.2611 },
+      "M³awa": { lat: 53.1082, lng: 20.3847 },
+      "Grodzisk Mazowiecki": { lat: 52.1078, lng: 20.6374 },
+      "Nowy Dwór Mazowiecki": { lat: 52.4378, lng: 20.7174 },
+      "O¿arów Mazowiecki": { lat: 52.2478, lng: 20.8074 },
+      "Wyszków": { lat: 52.5978, lng: 21.4574 },
+      "Pu³tusk": { lat: 52.7078, lng: 21.0874 },
+      "Józefów": { lat: 52.1378, lng: 21.2374 },
+      "Koby³ka": { lat: 52.3278, lng: 21.0674 },
+      "Konstancin-Jeziorna": { lat: 52.0878, lng: 21.1174 },
+      "Zielonka": { lat: 52.3078, lng: 21.1674 },
+      "Mi³anówek": { lat: 52.1278, lng: 20.6774 },
+      "Brwinów": { lat: 52.1478, lng: 20.7174 },
+      "Radzymyñ": { lat: 52.4178, lng: 21.1874 },
+      "£omianki": { lat: 52.3378, lng: 20.8874 },
+      "B³onie": { lat: 52.1878, lng: 20.6074 },
+      "Góra Kalwaria": { lat: 51.9678, lng: 21.2174 },
+      "Sulejówek": { lat: 52.2578, lng: 21.2774 },
+      "Halinów": { lat: 52.1178, lng: 21.3674 },
+      "Karczew": { lat: 52.0778, lng: 21.2474 },
+      "Gostynin": { lat: 52.4278, lng: 19.4674 },
+      "Sierpc": { lat: 52.8578, lng: 19.6674 },
+      "P³oñsk": { lat: 52.6278, lng: 20.3774 },
+      "Przasnysz": { lat: 53.0178, lng: 20.8774 },
+      "Maków Mazowiecki": { lat: 52.8878, lng: 20.4374 },
+      "Wyszogród": { lat: 52.4878, lng: 20.1174 },
+      "Nasielsk": { lat: 52.5778, lng: 20.8074 },
+      "Zakroczym": { lat: 52.4378, lng: 20.6174 },
+      "Serock": { lat: 52.5178, lng: 21.0574 },
+      "T³uszcz": { lat: 52.4678, lng: 21.3474 },
+      "Garwolin": { lat: 51.8978, lng: 21.6174 },
+      "Pilawa": { lat: 51.6278, lng: 21.4474 },
+      "Kozienice": { lat: 51.5578, lng: 21.5574 },
+      "Zwoleñ": { lat: 51.3478, lng: 21.5774 },
+      "Pionki": { lat: 51.4778, lng: 21.4574 },
+      "I¿a": { lat: 51.2378, lng: 21.4774 },
+      "Bia³obrzegi": { lat: 51.6478, lng: 20.9574 },
+      "Przysucha": { lat: 51.3578, lng: 20.6074 },
+      "Szyd³owiec": { lat: 51.2278, lng: 20.8574 },
+      "Warka": { lat: 51.7778, lng: 21.1874 },
+      "Grójec": { lat: 51.8678, lng: 20.8674 },
+      "Mogielnica": { lat: 51.9078, lng: 20.6374 },
+      "Nowe Miasto nad Pilic¹": { lat: 51.6178, lng: 20.7074 },
+      "Mszczonów": { lat: 52.0278, lng: 20.5174 },
+      "¯yrardów": { lat: 52.0578, lng: 20.4474 },
+      "Raszyn": { lat: 52.1378, lng: 20.9174 },
+      "Podkowa Leœna": { lat: 52.1178, lng: 20.7274 },
+      "Chynów": { lat: 51.9278, lng: 21.0474 },
+      "Tarczyn": { lat: 52.0478, lng: 20.8274 },
+      "Nadarzyn": { lat: 52.1078, lng: 20.7974 },
+      "Zabki": { lat: 52.2999, lng: 21.1022 },
+      "Ozarow Mazowiecki": { lat: 52.2499, lng: 20.8022 },
+      "Plock": { lat: 52.5463, lng: 19.7065 },
+      "Mlawa": { lat: 53.1199, lng: 20.3822 },
+      "Pultu??": { lat: 52.7099, lng: 21.0822 },
+      "Lomianki": { lat: 52.3299, lng: 20.8722 },
+      "Blonie": { lat: 52.1999, lng: 20.6222 },
+
+      // Opolskie
+      "Opole": { lat: 50.6751, lng: 17.9213 },
+      "Kêdzierzyn-KoŸle": { lat: 50.3490, lng: 18.2136 },
+      "Nysa": { lat: 50.4737, lng: 17.3335 },
+      "Brzeg": { lat: 50.8609, lng: 17.4666 },
+      "Kluczbork": { lat: 50.9722, lng: 18.2184 },
+      "Prudnik": { lat: 50.3232, lng: 17.5859 },
+      "Strzelce Opolskie": { lat: 50.5084, lng: 18.3070 },
+      "Krapkowice": { lat: 50.4748, lng: 17.9647 },
+      "G³ubczyce": { lat: 50.2021, lng: 17.8293 },
+      "Namys³ów": { lat: 51.0721, lng: 17.7293 },
+      "Ozimek": { lat: 50.6721, lng: 18.2193 },
+      "Zdzieszowice": { lat: 50.4021, lng: 18.1393 },
+      "G³ogówek": { lat: 50.3521, lng: 17.8593 },
+      "Niemodlin": { lat: 50.6421, lng: 17.6293 },
+      "Paczków": { lat: 50.4621, lng: 17.0093 },
+      "Otmuchów": { lat: 50.4521, lng: 17.1693 },
+      "Gogolin": { lat: 50.4821, lng: 18.0193 },
+      "Leœnica": { lat: 50.8321, lng: 17.8493 },
+      "Ujazd": { lat: 50.6021, lng: 18.0993 },
+      "Kolonowskie": { lat: 50.6521, lng: 18.3093 },
+      "Bia³a": { lat: 50.1621, lng: 17.5093 },
+      "Korfantów": { lat: 50.1721, lng: 17.5593 },
+      "Baborów": { lat: 50.1421, lng: 18.0393 },
+      "Kietrz": { lat: 50.0821, lng: 18.1993 },
+      "Zawadzkie": { lat: 50.6321, lng: 18.4693 },
+      "Dobrodzien": { lat: 50.7321, lng: 18.4093 },
+      "Wo³czów": { lat: 50.7021, lng: 18.4893 },
+      "Byczyna": { lat: 51.1121, lng: 18.2193 },
+      "Praszka": { lat: 51.0521, lng: 18.4593 },
+      "Gorzów Œl¹ski": { lat: 50.9321, lng: 18.4393 },
+
+      // Podkarpackie
+      "Rzeszów": { lat: 50.0413, lng: 21.9990 },
+      "Przemyœl": { lat: 49.7839, lng: 22.7681 },
+      "Stalowa Wola": { lat: 50.5820, lng: 22.0528 },
+      "Mielec": { lat: 50.2876, lng: 21.4242 },
+      "Tarnobrzeg": { lat: 50.5734, lng: 21.6795 },
+      "Krosno": { lat: 49.6886, lng: 21.7707 },
+      "Jaros³aw": { lat: 50.0167, lng: 22.6774 },
+      "Sanok": { lat: 49.5556, lng: 22.2069 },
+      "Dêbica": { lat: 50.0516, lng: 21.4110 },
+      "£añcut": { lat: 50.0670, lng: 22.2291 },
+      "Jas³o": { lat: 49.7452, lng: 21.4722 },
+      "Przeworsk": { lat: 50.0589, lng: 22.4941 },
+      "Ropczyce": { lat: 50.0504, lng: 21.6084 },
+      "Le¿ajsk": { lat: 50.2604, lng: 22.4184 },
+      "Nisko": { lat: 50.5204, lng: 22.1384 },
+      "Lubaczów": { lat: 50.1604, lng: 23.1284 },
+      "Ustrzyki Dolne": { lat: 49.4304, lng: 22.5984 },
+      "Lesko": { lat: 49.4704, lng: 22.3284 },
+      "Brzozów": { lat: 49.6904, lng: 22.0184 },
+      "Strzy¿ów": { lat: 49.8804, lng: 21.7784 },
+      "Kolbuszowa": { lat: 50.2304, lng: 21.7684 },
+      "Sêdziszów Ma³opolski": { lat: 50.0504, lng: 21.9384 },
+      "G³ogów Ma³opolski": { lat: 50.1604, lng: 21.9684 },
+      "Soko³ów Ma³opolski": { lat: 50.2404, lng: 21.8684 },
+      "Rudnik nad Sanem": { lat: 50.4404, lng: 22.2484 },
+      "Ulanów": { lat: 50.4804, lng: 22.2784 },
+      "Baranów Sandomierski": { lat: 50.5104, lng: 21.7384 },
+      "Kañczuga": { lat: 49.9704, lng: 22.4084 },
+      "Sieniawa": { lat: 50.1704, lng: 22.6084 },
+      "Radymno": { lat: 49.9504, lng: 22.8084 },
+      "Dynów": { lat: 49.8204, lng: 22.2284 },
+      "B³a¿owa": { lat: 49.9804, lng: 21.8384 },
+      "Tyczyn": { lat: 49.9504, lng: 21.8984 },
+      "Rymanów": { lat: 49.5804, lng: 21.8584 },
+      "Dukla": { lat: 49.5604, lng: 21.6784 },
+      "Jedlicze": { lat: 49.6504, lng: 21.6084 },
+      "Iwonicz-Zdrój": { lat: 49.5704, lng: 21.7784 },
+      "Ko³aczyce": { lat: 49.8104, lng: 21.4584 },
+      "Pilzno": { lat: 49.9804, lng: 21.2884 },
+      "Czudec": { lat: 50.0404, lng: 21.8784 },
+      "Niebylec": { lat: 50.0704, lng: 21.7484 },
+      "Zagórz": { lat: 49.5104, lng: 22.2784 },
+      "Oleszyce": { lat: 50.0804, lng: 23.0384 },
+      "Narol": { lat: 50.3404, lng: 23.3284 },
+      "Cieszanów": { lat: 50.1904, lng: 23.1784 },
+      "Nowa Dêba": { lat: 50.4304, lng: 21.7584 },
+      "Nowa Sarzyna": { lat: 50.3204, lng: 22.3284 },
+      "Przec³aw": { lat: 50.2804, lng: 22.4784 },
+      "Radomyœl Wielki": { lat: 50.2004, lng: 21.2784 },
+
+      // Podlaskie
+      "Bia³ystok": { lat: 53.1325, lng: 23.1688 },
+      "£om¿a": { lat: 53.1780, lng: 22.0585 },
+      "Suwa³ki": { lat: 54.1116, lng: 22.9308 },
+      "Augustów": { lat: 53.8433, lng: 22.9800 },
+      "Grajewo": { lat: 53.6478, lng: 22.4565 },
+      "Hajnówka": { lat: 52.7441, lng: 23.5812 },
+      "Zambrów": { lat: 52.9854, lng: 22.2434 },
+      "Bielsk Podlaski": { lat: 52.7666, lng: 23.1917 },
+      "Sokó³ka": { lat: 53.4044, lng: 23.5052 },
+      "Wysokie Mazowieckie": { lat: 52.9178, lng: 22.5179 },
+      "Moñki": { lat: 53.4078, lng: 22.8179 },
+      "Sejny": { lat: 54.1078, lng: 23.3479 },
+      "Kolno": { lat: 53.4178, lng: 22.0379 },
+      "Siemiatycze": { lat: 52.4278, lng: 22.8679 },
+      "D¹browa Bia³ostocka": { lat: 53.2078, lng: 23.2279 },
+      "Supraœl": { lat: 53.2178, lng: 23.3379 },
+      "Wasilków": { lat: 53.1978, lng: 23.2079 },
+      "Czarna Bia³ostocka": { lat: 53.6378, lng: 23.2579 },
+      "Choroszcz": { lat: 53.1478, lng: 23.0879 },
+      "£apy": { lat: 53.0778, lng: 22.8879 },
+      "Nowogród": { lat: 53.3378, lng: 22.3379 },
+      "Jedwabne": { lat: 53.2878, lng: 22.3079 },
+      "Stawiski": { lat: 53.3678, lng: 22.1279 },
+      "Knyszyn": { lat: 53.3178, lng: 22.9279 },
+      "Goni¹dz": { lat: 53.4878, lng: 22.7379 },
+      "Suchowola": { lat: 53.5778, lng: 23.1179 },
+      "Krynki": { lat: 53.4678, lng: 23.7579 },
+      "Lipsk": { lat: 52.7378, lng: 23.4579 },
+      "Szczuczyn": { lat: 53.5678, lng: 22.2879 },
+      "Rajgród": { lat: 53.7278, lng: 22.6779 },
+      "Brañsk": { lat: 52.7478, lng: 22.8479 },
+      "Ciechanowiec": { lat: 52.6778, lng: 22.5079 },
+      "Czy¿ew": { lat: 52.8778, lng: 22.6679 },
+      "Kleszczele": { lat: 52.6478, lng: 23.3179 },
+      "Drohiczyn": { lat: 52.3978, lng: 22.6579 },
+      "Tykocin": { lat: 53.2078, lng: 22.7679 },
+      "Zab³udów": { lat: 53.0178, lng: 23.3179 },
+      "Micha³owo": { lat: 53.0478, lng: 23.7279 },
+      "Sura¿": { lat: 53.0678, lng: 22.9579 },
+      "Bia³owie¿a": { lat: 52.7078, lng: 23.8679 },
+      "Narew": { lat: 52.7178, lng: 23.5079 },
+      "Turoœñ Koœcielna": { lat: 53.0578, lng: 22.9979 },
+      "Juchnowiec Koœcielny": { lat: 53.1178, lng: 23.1479 },
+      "Boæki": { lat: 52.6678, lng: 22.8579 },
+      "Rudka": { lat: 52.5578, lng: 23.0279 },
+      "Czeremcha": { lat: 52.5878, lng: 23.3479 },
+      "Narewka": { lat: 52.8678, lng: 23.7079 },
+      "Dubicze Cerkiewne": { lat: 52.3778, lng: 23.2879 },
+      "Orla": { lat: 52.7278, lng: 23.3279 },
+      "Kruszyniany": { lat: 53.2578, lng: 23.7679 },
+      "Filipów": { lat: 54.0778, lng: 22.7279 },
+      "Punsk": { lat: 54.2578, lng: 22.8379 },
+      "Przeroœl": { lat: 54.1478, lng: 22.4679 },
+      "Giby": { lat: 54.1178, lng: 22.6579 },
+      "Rutka-Tartak": { lat: 54.3778, lng: 22.4979 },
+      "Raczki": { lat: 54.0878, lng: 22.8179 },
+      "Szypliszki": { lat: 54.2778, lng: 22.6879 },
+      "Wi¿ajny": { lat: 54.4078, lng: 22.8779 },
+      "Go³dap": { lat: 54.3078, lng: 22.3079 },
+
+      // Pomorskie
+      "Gdañsk": { lat: 54.3520, lng: 18.6466 },
+      "Gdynia": { lat: 54.5189, lng: 18.5305 },
+      "S³upsk": { lat: 54.4641, lng: 17.0286 },
+      "Sopot": { lat: 54.4418, lng: 18.5601 },
+      "Tczew": { lat: 54.0913, lng: 18.7799 },
+      "Starogard Gdañski": { lat: 53.9679, lng: 18.5258 },
+      "Wejherowo": { lat: 54.6056, lng: 18.2370 },
+      "Rumia": { lat: 54.5682, lng: 18.3895 },
+      "Reda": { lat: 54.6054, lng: 18.3433 },
+      "Pruszcz Gdañski": { lat: 54.2574, lng: 18.6329 },
+      "Lêbork": { lat: 54.5406, lng: 17.7493 },
+      "Malbork": { lat: 54.0364, lng: 19.0345 },
+      "Koœcierzyna": { lat: 54.1207, lng: 17.9756 },
+      "Kartuzy": { lat: 54.3358, lng: 18.2044 },
+      "Chojnice": { lat: 53.6958, lng: 17.5544 },
+      "Kwidzyn": { lat: 53.7258, lng: 18.9344 },
+      "Sztum": { lat: 53.9958, lng: 19.0244 },
+      "Puck": { lat: 54.7258, lng: 18.4144 },
+      "W³adys³awowo": { lat: 54.7958, lng: 18.4044 },
+      "Jastarnia": { lat: 54.6958, lng: 18.6744 },
+      "Hel": { lat: 54.6058, lng: 18.8044 },
+      "Ustka": { lat: 54.5858, lng: 16.8644 },
+      "£eba": { lat: 54.7558, lng: 17.5644 },
+      "Bytow": { lat: 54.1658, lng: 17.4944 },
+      "Cz³uchów": { lat: 53.6658, lng: 17.3644 },
+      "Gniew": { lat: 54.0058, lng: 18.8244 },
+      "Pe³plin": { lat: 53.9158, lng: 18.6544 },
+      "Skarszewy": { lat: 54.0558, lng: 18.4644 },
+      "Skórcz": { lat: 53.8858, lng: 18.7944 },
+      "Czarna Woda": { lat: 53.9958, lng: 18.4644 },
+      "Brusy": { lat: 54.0858, lng: 17.7044 },
+      "Dzierzgoñ": { lat: 54.0258, lng: 19.3444 },
+      "Prabuty": { lat: 53.7558, lng: 19.2144 },
+      "Nowy Dwór Gdañski": { lat: 54.2158, lng: 19.1244 },
+      "Krynica Morska": { lat: 54.3758, lng: 19.4344 },
+      "Czersk": { lat: 54.0158, lng: 17.9744 },
+      "¯ukowo": { lat: 54.3358, lng: 18.1444 },
+      "Koscierzyna": { lat: 54.1258, lng: 17.9744 },
+      "Debrzno": { lat: 54.4258, lng: 17.3444 },
+      "Czarne": { lat: 54.2858, lng: 17.9044 },
+      "Jastrzêbia Góra": { lat: 54.8358, lng: 18.3044 },
+      "Karwia": { lat: 54.8658, lng: 18.2344 },
+
+      // Œl¹skie
+      "Katowice": { lat: 50.2649, lng: 19.0238 },
+      "Czêstochowa": { lat: 50.7971, lng: 19.1200 },
+      "Sosnowiec": { lat: 50.2862, lng: 19.1041 },
+      "Gliwice": { lat: 50.2945, lng: 18.6714 },
+      "Zabrze": { lat: 50.3249, lng: 18.7856 },
+      "Bytom": { lat: 50.3483, lng: 18.9384 },
+      "Ruda Œl¹ska": { lat: 50.2593, lng: 18.8644 },
+      "Tychy": { lat: 50.1357, lng: 18.9985 },
+      "D¹browa Górnicza": { lat: 50.3249, lng: 19.2182 },
+      "Chorzów": { lat: 50.2946, lng: 18.9539 },
+      "Jaworzno": { lat: 50.2053, lng: 19.2750 },
+      "Jastrzêbie-Zdrój": { lat: 49.9629, lng: 18.5937 },
+      "Mys³owice": { lat: 50.2084, lng: 19.1344 },
+      "Siemianowice Œl¹skie": { lat: 50.3077, lng: 19.0357 },
+      "¯ory": { lat: 50.0453, lng: 18.7005 },
+      "Œwiêtoch³owice": { lat: 50.2941, lng: 18.9173 },
+      "Bêdzin": { lat: 50.3291, lng: 19.1269 },
+      "Piekary Œl¹skie": { lat: 50.3825, lng: 18.9467 },
+      "Tarnowskie Góry": { lat: 50.4488, lng: 18.8564 },
+      "Bielsko-Bia³a": { lat: 49.8223, lng: 19.0448 },
+      "Racibórz": { lat: 50.0914, lng: 18.2186 },
+      "CzeladŸ": { lat: 50.3074, lng: 19.0787 },
+      "Rybnik": { lat: 50.0971, lng: 18.5420 },
+      "Miko³ów": { lat: 50.1734, lng: 18.9074 },
+      "Knurów": { lat: 50.2134, lng: 18.6574 },
+      "Pszczyna": { lat: 49.9774, lng: 18.9474 },
+      "Czechowice-Dziedzice": { lat: 49.9174, lng: 19.0074 },
+      "Oœwiêcim": { lat: 50.0374, lng: 19.2374 },
+      "¯ywiec": { lat: 49.6874, lng: 19.1974 },
+      "Rydultowy": { lat: 50.1574, lng: 18.3874 },
+      "Cieszyñ": { lat: 49.7474, lng: 18.6374 },
+      "Ustroñ": { lat: 49.7174, lng: 18.8074 },
+      "Wis³a": { lat: 49.6574, lng: 18.8574 },
+      "Skoczów": { lat: 49.7774, lng: 18.8174 },
+      "Bieruñ": { lat: 50.1074, lng: 19.1074 },
+      "Radlin": { lat: 50.0674, lng: 18.4674 },
+      "Wodzis³aw Œl¹ski": { lat: 49.9974, lng: 18.4574 },
+      "Czerwionka-Leszczyny": { lat: 50.1474, lng: 18.6374 },
+      "Radzionków": { lat: 50.3774, lng: 18.9674 },
+      "Œwierklany": { lat: 50.1174, lng: 18.9374 },
+      "Lêdziny": { lat: 50.1374, lng: 19.1374 },
+      "Wojkowice": { lat: 50.3474, lng: 19.0474 },
+      "Siewierz": { lat: 50.4574, lng: 19.2274 },
+      "Orzeszów": { lat: 50.1874, lng: 18.8874 },
+      "Kozieg³owy": { lat: 50.5774, lng: 19.1974 },
+      "Poczesna": { lat: 50.8174, lng: 18.9974 },
+      "Krzepice": { lat: 50.9674, lng: 18.6174 },
+      "K³obuck": { lat: 50.9074, lng: 18.9374 },
+      "Myszków": { lat: 50.5774, lng: 19.3174 },
+      "¯arki": { lat: 50.6274, lng: 19.3774 },
+      "Koniecpol": { lat: 50.7774, lng: 19.6974 },
+      "Blachownia": { lat: 50.8274, lng: 19.0574 },
+      "Szczekociny": { lat: 50.6074, lng: 19.8274 },
+      "Kazimierz Górniczy": { lat: 50.2574, lng: 19.3074 },
+      "£azy": { lat: 50.4174, lng: 19.3974 },
+      "Ogrodzieniec": { lat: 50.4474, lng: 19.5274 },
+      "Pilica": { lat: 50.4674, lng: 19.6374 },
+      "Krzanowice": { lat: 49.8874, lng: 18.1874 },
+      "KuŸnia Raciborska": { lat: 50.0574, lng: 18.3474 },
+      "Toszek": { lat: 50.4274, lng: 18.4874 },
+      "Pyskowice": { lat: 50.3874, lng: 18.6274 },
+      "Ujazd": { lat: 50.6074, lng: 18.0974 },
+      "Kalety": { lat: 50.5274, lng: 18.9174 },
+      "Miasteczko Œl¹skie": { lat: 50.4774, lng: 18.9374 },
+      "Szczyrk": { lat: 49.7174, lng: 19.0374 },
+      "Buczkowice": { lat: 49.8574, lng: 19.1174 },
+      "Wilamowice": { lat: 49.9474, lng: 19.0974 },
+      "Koz³y": { lat: 50.0874, lng: 18.2374 },
+      "Bêdziny": { lat: 50.3274, lng: 19.1274 },
+      "W³adys³awice": { lat: 50.1774, lng: 18.8474 },
+      "Sosz³owice": { lat: 50.8774, lng: 19.0874 },
+      "Worek": { lat: 50.3774, lng: 19.4574 },
+      "Sosnicowice": { lat: 50.4874, lng: 18.6374 },
+      "Poreby": { lat: 49.7074, lng: 19.0774 },
+
+      // Œwiêtokrzyskie
+      "Kielce": { lat: 50.8661, lng: 20.6286 },
+      "Ostrowiec Œwiêtokrzyski": { lat: 50.9293, lng: 21.3854 },
+      "Starachowice": { lat: 51.0377, lng: 21.0712 },
+      "Skar¿ysko-Kamienna": { lat: 51.1157, lng: 20.8658 },
+      "Koñskie": { lat: 51.1936, lng: 20.4066 },
+      "Sandomierz": { lat: 50.6803, lng: 21.7492 },
+      "Jêdrzejów": { lat: 50.6364, lng: 20.3035 },
+      "Busko-Zdrój": { lat: 50.4706, lng: 20.7186 },
+      "W³oszczowa": { lat: 50.8506, lng: 19.9686 },
+      "Staszów": { lat: 50.5606, lng: 21.1686 },
+      "Piñczów": { lat: 50.5206, lng: 20.5286 },
+      "Po³aniec": { lat: 50.4306, lng: 21.2886 },
+      "Kazimierza Wielka": { lat: 50.2706, lng: 20.4886 },
+      "Chmielnik": { lat: 50.3906, lng: 20.7586 },
+      "Wiœlica": { lat: 50.3506, lng: 20.6686 },
+      "Dzia³oszyce": { lat: 50.3606, lng: 20.3286 },
+      "Skalbmierz": { lat: 50.3306, lng: 20.4586 },
+      "Nowy Korczyn": { lat: 50.2906, lng: 21.1586 },
+      "Opatów": { lat: 50.7906, lng: 21.4586 },
+      "O¿arów": { lat: 50.8906, lng: 21.6186 },
+      "Klimontów": { lat: 50.6706, lng: 21.4886 },
+      "Koprzywnica": { lat: 50.5906, lng: 21.5586 },
+      "Zawichost": { lat: 50.8006, lng: 21.8586 },
+      "Tar³ów": { lat: 50.3406, lng: 21.2786 },
+      "Oleœnica": { lat: 50.9506, lng: 21.2286 },
+      "Kunów": { lat: 51.0306, lng: 21.3086 },
+      "I³¿a": { lat: 51.1606, lng: 21.2786 },
+      "Lipsko": { lat: 51.1006, lng: 21.6386 },
+      "Zwoleñ": { lat: 51.3406, lng: 21.5786 },
+      "Rytwiany": { lat: 50.6206, lng: 20.9486 },
+      "Pacanów": { lat: 50.4706, lng: 20.9486 },
+      "Stopnica": { lat: 50.4506, lng: 20.9086 },
+      "S³omniki": { lat: 50.2406, lng: 20.0686 },
+      "Szczucin": { lat: 50.1106, lng: 20.7586 },
+      "D¹browa Tarnowska": { lat: 50.1306, lng: 20.6286 },
+      "Radgoszcz": { lat: 50.9306, lng: 20.2586 },
+      "Secemin": { lat: 50.7506, lng: 20.4886 },
+      "Ma³ogoszcz": { lat: 50.8206, lng: 20.2786 },
+      "Sopoœcice": { lat: 50.8906, lng: 20.4286 },
+      "Opatów": { lat: 50.7906, lng: 21.4586 },
+      "Suched³ów": { lat: 50.9106, lng: 20.8486 },
+      "Chêciny": { lat: 50.7906, lng: 20.4586 },
+      "Daleszyce": { lat: 50.7706, lng: 20.6786 },
+      "Kunów": { lat: 51.0306, lng: 21.3086 },
+      "O¿arów": { lat: 50.8906, lng: 21.6186 },
+      "Osiek": { lat: 50.5406, lng: 21.8986 },
+      "Wodzis³aw": { lat: 50.4906, lng: 20.3586 },
+      "Staporkuów": { lat: 50.6606, lng: 21.4786 },
+      "£agów": { lat: 50.8806, lng: 20.6986 },
+      "Nowa S³upia": { lat: 50.8506, lng: 20.9786 },
+      "Wielebnów": { lat: 50.4806, lng: 20.6486 },
+      "Soko³ów": { lat: 50.3306, lng: 20.9286 },
+      "Miêdzygórz": { lat: 50.2706, lng: 21.1886 },
+
+      // Warmiñsko-Mazurskie
+      "Olsztyn": { lat: 53.7799, lng: 20.4942 },
+      "Elbl¹g": { lat: 54.1564, lng: 19.4038 },
+      "E³k": { lat: 53.8280, lng: 22.3683 },
+      "Ostróda": { lat: 53.6946, lng: 19.9714 },
+      "I³awa": { lat: 53.5957, lng: 19.5693 },
+      "Kêtrzyn": { lat: 54.0770, lng: 21.3756 },
+      "Gi¿ycko": { lat: 54.0402, lng: 21.7686 },
+      "Braniewo": { lat: 54.3825, lng: 19.8239 },
+      "Mr¹gowo": { lat: 53.8643, lng: 21.3043 },
+      "Bartoszyce": { lat: 54.2536, lng: 20.8082 },
+      "Lidzbark Warmiñski": { lat: 54.1214, lng: 20.5769 },
+      "Szczytno": { lat: 53.5599, lng: 20.9969 },
+      "Pisz": { lat: 53.6299, lng: 21.8069 },
+      "Nidzica": { lat: 53.3599, lng: 20.4269 },
+      "Dzia³dowo": { lat: 53.2399, lng: 20.1769 },
+      "Goldap": { lat: 54.3099, lng: 22.3069 },
+      "Olecko": { lat: 54.0399, lng: 22.5069 },
+      "Wêgorzewo": { lat: 54.2099, lng: 21.7469 },
+      "Go³dap": { lat: 54.3099, lng: 22.3069 },
+      "Pas³êk": { lat: 54.0699, lng: 19.6569 },
+      "Reszel": { lat: 53.9599, lng: 21.1369 },
+      "Sêpopol": { lat: 54.2699, lng: 21.0069 },
+      "Korsze": { lat: 54.1599, lng: 21.1669 },
+      "Barczewo": { lat: 53.8099, lng: 20.7069 },
+      "Dobre Miasto": { lat: 53.9899, lng: 20.3869 },
+      "Orneta": { lat: 54.1199, lng: 20.1269 },
+      "Frombork": { lat: 54.3599, lng: 19.6869 },
+      "Tolkmicko": { lat: 54.3299, lng: 19.4369 },
+      "M³ynary": { lat: 54.1899, lng: 19.3269 },
+      "Mor¹g": { lat: 54.0899, lng: 19.9269 },
+      "Górowo I³aweckie": { lat: 54.2799, lng: 20.4969 },
+      "Susz": { lat: 53.7399, lng: 19.3569 },
+      "Zalewo": { lat: 53.8799, lng: 19.5569 },
+      "Mi³akowo": { lat: 53.9699, lng: 20.4869 },
+      "Mi³om³yn": { lat: 53.7699, lng: 19.8669 },
+      "Lubawa": { lat: 53.6199, lng: 19.7469 },
+      "Biskupiec": { lat: 53.8699, lng: 20.9569 },
+      "Bisztynek": { lat: 54.0899, lng: 20.8869 },
+      "Ryn": { lat: 53.9399, lng: 21.5469 },
+      "Miko³ajki": { lat: 53.8099, lng: 21.5669 },
+      "Orzysz": { lat: 53.8399, lng: 21.9469 },
+      "Bia³a Piska": { lat: 53.5999, lng: 21.4669 },
+      "Ruciane-Nida": { lat: 53.8199, lng: 21.5269 },
+      "Wêgorzyn": { lat: 53.8599, lng: 21.8569 },
+      "Nowe Miasto Lubawskie": { lat: 53.4199, lng: 19.9569 },
+      "Mor¹g": { lat: 54.0899, lng: 19.9269 },
+      "Jeziorany": { lat: 53.6999, lng: 20.5569 },
+      "Kisielice": { lat: 53.5999, lng: 19.9769 },
+      "Pieniê¿no": { lat: 54.2199, lng: 20.2369 },
+      "Sêpólno I³aweckie": { lat: 53.6599, lng: 19.6669 },
+      "Lidzbark": { lat: 54.1199, lng: 20.5769 },
+
+      // Wielkopolskie
+      "Poznañ": { lat: 52.4064, lng: 16.9252 },
+      "Kalisz": { lat: 51.7687, lng: 18.0901 },
+      "Konin": { lat: 52.2230, lng: 18.2515 },
+      "Leszno": { lat: 51.8407, lng: 16.5750 },
+      "Gniezno": { lat: 52.5348, lng: 17.5828 },
+      "Pi³a": { lat: 53.1512, lng: 16.7384 },
+      "Ostrów Wielkopolski": { lat: 51.6523, lng: 17.8106 },
+      "Krotoszyn": { lat: 51.6976, lng: 17.4376 },
+      "Turek": { lat: 52.0164, lng: 18.5005 },
+      "Jarocin": { lat: 51.9739, lng: 17.5008 },
+      "Œrem": { lat: 52.0858, lng: 17.0147 },
+      "Gostyñ": { lat: 51.8830, lng: 17.0106 },
+      "Swarzêdz": { lat: 52.4130, lng: 17.0779 },
+      "Luboñ": { lat: 52.3453, lng: 16.8647 },
+      "Mosina": { lat: 52.2456, lng: 16.9460 },
+      "Wrzeœnia": { lat: 52.3251, lng: 17.5666 },
+      "Ko³o": { lat: 52.2020, lng: 18.6379 },
+      "S³upca": { lat: 52.2892, lng: 17.8741 },
+      "Wagrowiec": { lat: 52.8076, lng: 17.2008 },
+      "Oborniku": { lat: 52.6521, lng: 16.8074 },
+      "Wolsztyn": { lat: 52.1142, lng: 16.1142 },
+      "Koscian": { lat: 52.0863, lng: 16.6500 },
+      "KoŸmin Wielkopolski": { lat: 51.8370, lng: 17.4355 },
+      "Pleszew": { lat: 51.9015, lng: 17.7865 },
+      "Witkowo": { lat: 52.3165, lng: 17.3765 },
+      "RogoŸno": { lat: 52.7365, lng: 17.0365 },
+      "Trzemeszno": { lat: 52.5665, lng: 17.8265 },
+      "Murowana Goœlina": { lat: 52.6365, lng: 17.0065 },
+      "Puszczykowo": { lat: 52.2765, lng: 16.8765 },
+      "Kórnik": { lat: 52.2465, lng: 17.0965 },
+      "Buk": { lat: 52.3565, lng: 16.7965 },
+      "Kostrzyn": { lat: 52.4165, lng: 17.0565 },
+      "Pobiedziska": { lat: 52.4765, lng: 17.2965 },
+      "Opalenica": { lat: 52.2965, lng: 16.4165 },
+      "Nowy Tomyœl": { lat: 52.3165, lng: 16.1365 },
+      "Zbasyñ": { lat: 52.2465, lng: 15.9065 },
+      "Grodzisk Wielkopolski": { lat: 52.2065, lng: 16.2765 },
+      "Szamotu³y": { lat: 52.6165, lng: 16.5765 },
+      "Pniewy": { lat: 52.5165, lng: 16.3565 },
+      "Krajenka": { lat: 53.3165, lng: 16.9065 },
+      "Z³otów": { lat: 53.3565, lng: 17.0465 },
+      "Chodzie¿": { lat: 52.9965, lng: 17.0165 },
+      "Czarnkow": { lat: 53.1365, lng: 16.5665 },
+      "Trzcianka": { lat: 53.0365, lng: 16.4665 },
+      "Wie³eñ": { lat: 52.9165, lng: 16.1765 },
+      "Krzy¿ Wielkopolski": { lat: 52.9065, lng: 15.8165 },
+      "Ostrzeszów": { lat: 51.4265, lng: 18.1365 },
+      "Wrzeœnia": { lat: 52.3268, lng: 17.5621 },
+      "Ko³o": { lat: 52.2068, lng: 18.6421 },
+      "S³upca": { lat: 52.2768, lng: 17.8721 },
+      "W¹growiec": { lat: 52.8068, lng: 17.2021 },
+      "Oborniki": { lat: 52.6568, lng: 16.8221 },
+      "Wolsztyn": { lat: 52.1168, lng: 16.1121 },
+      "Koœcian": { lat: 52.0868, lng: 16.6521 },
+      "KoŸmin Wielkopolski": { lat: 51.8368, lng: 17.4421 },
+      "Pleszew": { lat: 51.9068, lng: 17.7921 },
+      "Witkowo": { lat: 52.4768, lng: 17.7721 },
+      "RogoŸno": { lat: 52.7468, lng: 16.9321 },
+      "Trzemeszno": { lat: 52.5668, lng: 17.8321 },
+      "Murowana Goœlina": { lat: 52.5868, lng: 16.9121 },
+      "Puszczykowo": { lat: 52.2868, lng: 16.8421 },
+      "Kórnik": { lat: 52.2468, lng: 17.0921 },
+      "Buk": { lat: 52.3368, lng: 16.7721 },
+      "Kostrzyn": { lat: 52.4068, lng: 17.0521 },
+      "Pobiedziska": { lat: 52.4768, lng: 17.2821 },
+      "Rakoniewice": { lat: 52.1468, lng: 16.1021 },
+      "Wielichowo": { lat: 52.1268, lng: 16.3521 },
+      "Miedzychód": { lat: 52.5968, lng: 15.8821 },
+      "Sieraków": { lat: 52.6468, lng: 15.7721 },
+      "Wronki": { lat: 52.7068, lng: 16.3821 },
+      "Margonin": { lat: 52.9768, lng: 17.2421 },
+      "Ujœcie": { lat: 53.0868, lng: 16.7721 },
+      "Drawsko": { lat: 52.8968, lng: 15.7121 },
+      "Borek Wielkopolski": { lat: 51.9668, lng: 17.4721 },
+      "Poniec": { lat: 51.7668, lng: 16.8121 },
+      "Miejska Górka": { lat: 51.6768, lng: 17.3621 },
+      "Jutrosin": { lat: 51.5968, lng: 17.5421 },
+      "Pyzdry": { lat: 52.1268, lng: 17.6921 },
+      "Zagórów": { lat: 52.1668, lng: 17.8921 },
+      "Œlesin": { lat: 52.1968, lng: 18.4221 },
+      "Kleczew": { lat: 52.1468, lng: 18.2021 },
+      "Sompolno": { lat: 52.3968, lng: 18.5021 },
+      "Golina": { lat: 52.2268, lng: 17.9521 },
+      "Kazimierz Biskupi": { lat: 52.2768, lng: 18.0821 },
+      "Wilczyn": { lat: 52.1168, lng: 18.0021 },
+      "Grabów nad Prosn¹": { lat: 51.3668, lng: 18.1021 },
+      "Nekla": { lat: 52.3768, lng: 17.4021 },
+      "Czerniejewo": { lat: 52.4968, lng: 17.7021 },
+      "Kêpno": { lat: 51.2768, lng: 17.9921 },
+      "Kleparz": { lat: 52.4668, lng: 17.9821 },
+      "Streszów": { lat: 52.4368, lng: 17.1821 },
+      "Zbasyñ": { lat: 52.2468, lng: 15.9121 },
+      "Grzywna": { lat: 52.2168, lng: 16.0821 },
+      "Knêpowo": { lat: 52.1968, lng: 16.3721 },
+      "Kapiel": { lat: 53.2868, lng: 16.8921 },
+      "Jastrowice": { lat: 53.3768, lng: 17.1221 },
+      "Rawicko": { lat: 51.9568, lng: 17.5821 },
+      "Kroœnice": { lat: 51.7268, lng: 17.4721 },
+      "Sieraki": { lat: 51.5668, lng: 17.6521 },
+      "Mieszków": { lat: 51.4868, lng: 17.7221 },
+      "Czempinio": { lat: 51.4268, lng: 17.8521 },
+      "Brodniæ": { lat: 51.7568, lng: 17.8721 },
+      "Dolsk": { lat: 52.1168, lng: 17.0821 },
+      "Kleczów": { lat: 52.0768, lng: 17.4821 },
+      "Stawiszyn": { lat: 52.0368, lng: 18.1221 },
+      "Gozdowo": { lat: 52.3568, lng: 18.4721 },
+      "Rych³y": { lat: 52.1968, lng: 18.6821 },
+      "Lwówek": { lat: 52.4868, lng: 17.7821 },
+      "Orchowo": { lat: 52.1568, lng: 18.1021 },
+      "Miko³ajów": { lat: 51.3968, lng: 18.0421 },
+      "Dorgon": { lat: 51.2968, lng: 18.0721 },
+      "Olszówka": { lat: 52.3568, lng: 17.5021 },
+      "Soboty": { lat: 51.2568, lng: 18.0121 },
+
+      // Zachodniopomorskie
+      "Szczecin": { lat: 54.4285, lng: 14.5528 },
+      "Koszalin": { lat: 54.1943, lng: 16.1714 },
+      "Stargard": { lat: 53.3369, lng: 15.0505 },
+      "Ko³obrzeg": { lat: 54.1759, lng: 15.5831 },
+      "Œwinoujœcie": { lat: 53.9076, lng: 14.2472 },
+      "Szczecinek": { lat: 53.7090, lng: 16.6932 },
+      "Wa³cz": { lat: 53.2742, lng: 16.4764 },
+      "Œwidwin": { lat: 53.7766, lng: 15.7850 },
+      "Bia³ogard": { lat: 54.0071, lng: 15.9899 },
+      "Gryfino": { lat: 53.2532, lng: 14.4892 },
+      "Kamieñ Pomorski": { lat: 53.9678, lng: 14.7693 },
+      "£obez": { lat: 53.6373, lng: 15.6200 },
+      "Myœlibórz": { lat: 52.9322, lng: 14.8692 },
+      "Goleniów": { lat: 53.5615, lng: 14.8285 },
+      "Nowogard": { lat: 53.6715, lng: 15.1185 },
+      "Police": { lat: 53.5515, lng: 14.5685 },
+      "Gryfice": { lat: 54.2915, lng: 15.1985 },
+      "Trzebiatów": { lat: 54.0815, lng: 15.2685 },
+      "Dar³owo": { lat: 54.4215, lng: 16.4085 },
+      "S³awno": { lat: 54.3615, lng: 16.6785 },
+      "Ustka": { lat: 54.5815, lng: 16.8585 },
+      "Sianów": { lat: 54.2315, lng: 16.4785 },
+      "Polany": { lat: 53.8615, lng: 16.7985 },
+      "Bobolice": { lat: 54.1315, lng: 16.5785 },
+      "Barwice": { lat: 53.7415, lng: 16.2985 },
+      "Borne Sulinowo": { lat: 53.5715, lng: 16.4885 },
+      "Czaplinek": { lat: 53.5515, lng: 16.2285 },
+      "Drawsko Pomorskie": { lat: 53.5315, lng: 15.8085 },
+      "Z³ocieniec": { lat: 53.5415, lng: 16.0185 },
+      "Miros³awiec": { lat: 53.3915, lng: 16.0885 },
+      "Tuczno": { lat: 53.3715, lng: 16.1485 },
+      "P³oty": { lat: 53.7915, lng: 15.2685 },
+      "Resko": { lat: 53.7715, lng: 15.4085 },
+      "Wêgorzyno": { lat: 53.6515, lng: 15.2385 },
+      "Dobra": { lat: 53.2115, lng: 14.6785 },
+      "Chocin": { lat: 53.5115, lng: 14.6585 },
+      "Maszewo": { lat: 53.4815, lng: 14.6285 },
+      "Golczewo": { lat: 53.8115, lng: 15.2985 },
+      "Stepnica": { lat: 53.6715, lng: 14.6085 },
+      "Miêdzyzdroje": { lat: 53.9215, lng: 14.4485 },
+      "Wolin": { lat: 53.8415, lng: 14.6185 },
+      "Dziwnów": { lat: 54.0315, lng: 14.7485 },
+      "Rewal": { lat: 54.0915, lng: 15.0185 },
+      "Pogorzelica": { lat: 54.1315, lng: 15.0985 },
+      "Niechorze": { lat: 54.0815, lng: 14.8285 },
+      "Trzebósz": { lat: 53.8715, lng: 15.3585 },
+      "Mielno": { lat: 54.2615, lng: 16.0685 },
+      "Ustronie Morskie": { lat: 54.2715, lng: 16.1485 },
+      "Sarbinowo": { lat: 54.3315, lng: 15.7885 },
+      "Iñsko": { lat: 53.4215, lng: 15.5385 },
+      "Pó³czno": { lat: 53.6815, lng: 16.4585 },
+      "Recz": { lat: 53.3315, lng: 15.3885 },
+      "Dobrzany": { lat: 53.0815, lng: 15.7685 },
+      "Wieduchowa": { lat: 53.0315, lng: 14.6885 },
+      "Chojnino": { lat: 52.9815, lng: 14.8485 },
+      "Trzciñsko-Zdrój": { lat: 52.9615, lng: 14.8985 },
+      "Cedynia": { lat: 52.8715, lng: 14.1885 },
+      "Mieszkowice": { lat: 52.7715, lng: 14.3385 },
+      "Dêbno": { lat: 52.6615, lng: 14.6685 },
+      "Barlinek": { lat: 52.9615, lng: 15.2185 },
+      "Pe³czyce": { lat: 52.8615, lng: 14.4085 },
+      "Lipiany": { lat: 52.8915, lng: 15.1885 },
+      "Pyrzyce": { lat: 53.1415, lng: 14.8985 },
+      "Bielice": { lat: 53.0615, lng: 15.1985 },
+      "Kozielice": { lat: 53.3915, lng: 14.9985 },
+      "Warnice": { lat: 53.2515, lng: 14.7285 },
+      "Stare Czarnowo": { lat: 53.1715, lng: 14.9185 }
+    };
+
+
+    // Globalne zmienne
+    let currentVoivodeship = null;
+    let currentCity = null;
+    let selectedVoivodeship = null;
+    let selectedCity = null;
+    let map = null;
+    let elements = [];
+    let userLocation = null;
+    let activeFilters = new Set(['drinking_water', 'toilets_free', 'toilets_paid', 'toilets_unknown', 'atm', 'pharmacy']);
+    let markersLayers = {};
+    let currentPointForComment = null;
+    let selectedCommentStatus = null;
+
+    // Inicjalizacja
+    document.addEventListener('DOMContentLoaded', function() {
+      generateVoivodeshipCards();
+      loadFilterPreferences();
+    });
+
+    // Generowanie kart województw
+    function generateVoivodeshipCards() {
+      const grid = document.getElementById('voivodeship-grid');
+      grid.innerHTML = '';
+      
+      Object.keys(WOJ_MIASTA).forEach(voivodeship => {
+        const data = WOJ_MIASTA[voivodeship];
+        const card = document.createElement('div');
+        card.className = 'voivodeship-card';
+        card.onclick = () => selectVoivodeship(voivodeship);
+        
+        let imageName;
+        if (voivodeship === 'Mazowieckie') {
+          imageName = 'mazowieckie';
+        } else {
+          imageName = voivodeship.toLowerCase()
+            .replace(/¹/g, 'a')
+            .replace(/æ/g, 'c')
+            .replace(/ê/g, 'e')
+            .replace(/³/g, 'l')
+            .replace(/ñ/g, 'n')
+            .replace(/ó/g, 'o')
+            .replace(/œ/g, 's')
+            .replace(/Ÿ/g, 'z')
+            .replace(/¿/g, 'z')
+            .replace(/\s+/g, '-');
+        }
+        
+        card.innerHTML = `
+          <img src="/${imageName}.png" alt="${voivodeship}" class="voivodeship-image" loading="lazy">
+          <div class="voivodeship-content">
+            <div class="voivodeship-name">${voivodeship}</div>
+            <div class="voivodeship-cities">
+              <i class="fas fa-city"></i>
+              ${data.cities.length} miast
+            </div>
+          </div>
+        `;
+        
+        grid.appendChild(card);
+      });
+    }
+
+    // Wybór województwa
+    function selectVoivodeship(voivodeship) {
+      currentVoivodeship = voivodeship;
+      document.getElementById('city-title').textContent = `Miasta w województwie ${voivodeship}`;
+      
+      const grid = document.getElementById('city-grid');
+      grid.innerHTML = '';
+      
+      WOJ_MIASTA[voivodeship].cities.forEach(city => {
+        const card = document.createElement('div');
+        card.className = 'city-card';
+        card.textContent = city;
+        card.onclick = () => selectCity(city);
+        grid.appendChild(card);
+      });
+      
+      document.getElementById('voivodeship-section').classList.add('hidden');
+      document.getElementById('city-section').classList.remove('hidden');
+    }
+
+    // Wybór miasta
+    function selectCity(city) {
+      currentCity = city;
+      document.getElementById('selected-title').textContent = `${city}, ${currentVoivodeship}`;
+      
+      document.getElementById('city-section').classList.add('hidden');
+      document.getElementById('selected-section').classList.remove('hidden');
+    }
+
+    // Powrót do województw
+    function showVoivodeshipSelection() {
+      currentVoivodeship = null;
+      currentCity = null;
+      elements = [];
+      
+      document.getElementById('city-section').classList.add('hidden');
+      document.getElementById('selected-section').classList.add('hidden');
+      document.getElementById('filter-card').style.display = 'none';
+      document.getElementById('map-card').style.display = 'none';
+      document.getElementById('voivodeship-section').classList.remove('hidden');
+    }
+
+    // Powrót do miast
+    function showCitySelection() {
+      currentCity = null;
+      elements = [];
+      
+      document.getElementById('selected-section').classList.add('hidden');
+      document.getElementById('filter-card').style.display = 'none';
+      document.getElementById('map-card').style.display = 'none';
+      document.getElementById('city-section').classList.remove('hidden');
+    }
+
+    // Geolokalizacja
+    function getUserLocation() {
+      if (!navigator.geolocation) {
+        showError('Geolokalizacja nie jest obs³ugiwana przez Twoj¹ przegl¹darkê.');
+        return;
+      }
+
+      const button = document.querySelector('.geolocation-btn');
+      const locationText = document.getElementById('location-text');
+      
+      button.disabled = true;
+      locationText.textContent = 'Okreœlanie lokalizacji...';
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          
+          button.disabled = false;
+          locationText.textContent = 'Lokalizacja okreœlona ?';
+          hideError();
+          
+          // Automatycznie poka¿ mapê z lokalizacj¹
+          showCityOnMap();
+          if (userLocation) {
+            addUserLocationMarker();
+          }
+        },
+        (error) => {
+          button.disabled = false;
+          locationText.textContent = 'Okreœl swoj¹ lokalizacjê';
+          
+          let errorMessage = 'Nie uda³o siê uzyskaæ lokalizacji.';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Dostêp do lokalizacji zosta³ odrzucony.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Informacje o lokalizacji s¹ niedostêpne.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Przekroczono czas oczekiwania na lokalizacjê.';
+              break;
+          }
+          showError(errorMessage);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        }
+      );
+    }
+
+    // Pokazanie miasta na mapie
+    function showCityOnMap() {
+      if (!currentCity) {
+        showToast('Wybierz miasto przed pokazaniem mapy.', 'error');
+        return;
+      }
+
+      // Poka¿ sekcje mapy i filtrów
+      document.getElementById('filter-card').style.display = 'block';
+      document.getElementById('map-card').style.display = 'block';
+
+      if (!map) {
+        initializeMap();
+      }
+
+      loadCityData();
+    }
+
+    // Reset widoku mapy
+    function resetMapView() {
+      if (map) {
+        map.setView([52.0693, 19.4803], 6);
+        userLocation = null;
+        elements = [];
+        clearAllMarkers();
+        updateFilterCounts();
+      }
+    }
+
+    // Inicjalizacja mapy
+    function initializeMap() {
+      map = L.map('map').setView([52.0693, 19.4803], 6);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    // £adowanie danych miasta z Overpass API
+    async function loadCityData() {
+      if (!currentCity || !currentVoivodeship) {
+        showToast('Brak wybranego miasta.', 'error');
+        return;
+      }
+
+      showLoading();
+      hideError();
+
+      // Pobierz wspó³rzêdne miasta
+      let cityCoords = CITY_COORDINATES[currentCity];
+      
+      // Jeœli nie ma wspó³rzêdnych w bazie, pobierz z Nominatim API
+      if (!cityCoords) {
+        try {
+          const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(currentCity)},Poland&format=json&limit=1`;
+          const response = await fetch(nominatimUrl, {
+            headers: {
+              'User-Agent': 'JAMIASTO-Poland-Facilities-Finder'
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('Nie mo¿na pobraæ wspó³rzêdnych miasta');
+          }
+          
+          const data = await response.json();
+          
+          if (data && data.length > 0) {
+            cityCoords = {
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon)
+            };
+            
+            // Zapisz wspó³rzêdne w pamiêci podrêcznej
+            CITY_COORDINATES[currentCity] = cityCoords;
+          } else {
+            showError(`Nie znaleziono miasta ${currentCity} na mapie.`);
+            hideLoading();
+            return;
+          }
+        } catch (error) {
+          console.error('B³¹d pobierania wspó³rzêdnych:', error);
+          showError('Nie mo¿na pobraæ wspó³rzêdnych miasta. Spróbuj ponownie.');
+          hideLoading();
+          return;
+        }
+      }
+
+      // Zapytanie do Overpass API o punkty w promieniu 25km od centrum miasta
+      const radius = 10000; // 10km w metrach
+      const query = `
+        [out:json][timeout:60];
+        (
+          node["amenity"~"^(drinking_water|toilets|atm|pharmacy)$"](around:${radius},${cityCoords.lat},${cityCoords.lng});
+          way["amenity"~"^(drinking_water|toilets|atm|pharmacy)$"](around:${radius},${cityCoords.lat},${cityCoords.lng});
+          relation["amenity"~"^(drinking_water|toilets|atm|pharmacy)$"](around:${radius},${cityCoords.lat},${cityCoords.lng});
+        );
+        out center meta;
+      `;
+
+      console.log('?? Szukam punktów dla:', currentCity, 'Wspó³rzêdne:', cityCoords, 'Promieñ:', radius+'m');
+      
+      const overpassUrl = 'https://overpass-api.de/api/interpreter';
+      
+      fetch(overpassUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `data=${encodeURIComponent(query)}`
+      })
+      .then(response => {
+        console.log('?? OdpowiedŸ API status:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('?? Dane z Overpass:', data);
+        hideLoading();
+        
+        elements = data.elements || [];
+        
+        console.log('?? Znaleziono elementów:', elements.length);
+        if (elements.length > 0) {
+          console.log('?? Pierwsze 3 elementy:', elements.slice(0,3));
+        }
+        
+        if (elements.length === 0) {
+          showToast(`?? Brak publicznych punktów w okolicy ${currentCity}. Spróbuj wiêksze miasto lub sprawdŸ inne województwo.`, 'warning');
+        } else {
+          showToast(`? Znaleziono ${elements.length} punktów w okolicy ${currentCity}!`, 'success');
+        }
+
+        processMapData();
+        updateFilterCounts();
+        
+        if (userLocation) {
+          map.setView([userLocation.latitude, userLocation.longitude], 13);
+          addUserLocationMarker();
+        } else {
+          // Centruj mapê na mieœcie
+          map.setView([cityCoords.lat, cityCoords.lng], 12);
+          
+          if (elements.length > 0) {
+            const bounds = L.latLngBounds(elements.map(el => {
+              const lat = el.lat || (el.center && el.center.lat);
+              const lon = el.lon || (el.center && el.center.lon);
+              return [lat, lon];
+            }).filter(coord => coord[0] && coord[1]));
+            
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, { padding: [20, 20] });
+            }
+          }
+        }
+      })
+      .catch(error => {
+        hideLoading();
+        console.error('B³¹d podczas pobierania danych:', error);
+        
+        // Pokazuj bardziej szczegó³owe b³êdy
+        let errorMessage = 'B³¹d podczas pobierania danych';
+        if (error.name === 'TypeError') {
+          errorMessage = 'Brak po³¹czenia z internetem lub serwer niedostêpny';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Przekroczono czas oczekiwania. Spróbuj ponownie.';
+        } else {
+          errorMessage = `B³¹d: ${error.message}`;
+        }
+        
+        showError(errorMessage);
+      });
+    }
+
+    // Przetwarzanie danych mapy
+    function processMapData() {
+      console.log('?? Przetwarzam dane mapy, elementów:', elements.length);
+      
+      // Wyczyœæ istniej¹ce markery
+      clearAllMarkers();
+
+      // Grupuj elementy wed³ug typu
+      const groupedElements = {
+        drinking_water: [],
+        toilets_free: [],
+        toilets_paid: [],
+        toilets_unknown: [],
+        atm: [],
+        pharmacy: []
+      };
+
+      elements.forEach((element, index) => {
+        const filterType = getFilterType(element);
+        console.log(`?? Element ${index+1}:`, element.tags?.amenity, '›', filterType);
+        if (filterType && groupedElements[filterType]) {
+          groupedElements[filterType].push(element);
+        }
+      });
+      
+      console.log('?? Pogrupowane elementy:', Object.entries(groupedElements).map(([type, arr]) => `${type}: ${arr.length}`));
+
+      // Utwórz warstwy markerów dla ka¿dego typu
+      Object.entries(groupedElements).forEach(([filterType, elementList]) => {
+        console.log(`??? Tworzê markery dla ${filterType}: ${elementList.length} elementów`);
+        const layer = L.layerGroup();
+        
+        elementList.forEach((element, idx) => {
+          const marker = createMarker(element);
+          if (marker) {
+            layer.addLayer(marker);
+            console.log(`? Marker ${idx+1}/${elementList.length} utworzony dla ${filterType}`);
+          } else {
+            console.warn(`? Nie mo¿na utworzyæ markera ${idx+1} dla ${filterType}:`, element);
+          }
+        });
+        
+        markersLayers[filterType] = layer;
+        console.log(`?? Warstwa ${filterType} ma ${layer.getLayers().length} markerów`);
+      });
+
+      console.log('?? Aktywne filtry:', [...activeFilters]);
+      // Zastosuj filtry
+      applyFilters();
+    }
+
+    // Tworzenie markera
+    function createMarker(element) {
+      const lat = element.lat || (element.center && element.center.lat);
+      const lon = element.lon || (element.center && element.center.lon);
+      
+      if (!lat || !lon) return null;
+
+      const color = getColor(element);
+      const description = getDescription(element);
+      const icon = createColoredPin(color);
+      
+      const marker = L.marker([lat, lon], { icon: L.icon(icon) });
+      
+      // Pobierz informacje o nazwie i adresie
+      const name = element.tags?.name || description;
+      const addr = [
+        element.tags?.['addr:street'],
+        element.tags?.['addr:housenumber'],
+        element.tags?.['addr:city']
+      ].filter(Boolean).join(' ') || 'Brak dok³adnego adresu';
+
+      // Pobierz komentarze dla tego punktu
+      const pointId = `${element.type}-${element.id}`;
+      const comments = getCommentsForPoint(pointId);
+      const commentsCount = comments.length;
+      const averageRating = getAverageRating(comments);
+      
+      // Utwórz popup z informacjami i przyciskami
+      let popupContent = `
+        <div style="min-width: 250px; font-family: 'Inter', sans-serif;">
+          <h3 style="margin: 0 0 8px 0; font-family: 'Poppins', sans-serif; font-weight: 600; color: #333; font-size: 16px;">
+            ${name}
+          </h3>
+          <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
+            <i class="fas fa-map-marker-alt" style="margin-right: 4px;"></i>
+            ${addr}
+          </p>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+            <span style="background: ${color}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+              ${description}
+            </span>`;
+            
+      // Dodaj œredni¹ ocenê jeœli s¹ oceny
+      if (averageRating > 0) {
+        popupContent += `
+            <div style="display: flex; align-items: center; gap: 4px; background: #fff3cd; padding: 4px 8px; border-radius: 12px; border: 1px solid #ffeaa7;">
+              <span style="font-size: 12px; font-weight: 600; color: #856404;">
+                ${getRatingStars(Math.round(averageRating))} ${averageRating}
+              </span>
+              <span style="font-size: 10px; color: #856404;">(${comments.filter(c => c.rating > 0).length} ocen)</span>
+            </div>`;
+      }
+      
+      popupContent += `
+          </div>
+      `;
+
+      // Dodaj informacje o komentarzach
+      if (commentsCount > 0) {
+        const latestComment = comments[0];
+        const statusText = getStatusText(latestComment.status);
+        const statusColor = getStatusColor(latestComment.status);
+        
+        popupContent += `
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 8px; margin-bottom: 8px; border-left: 3px solid ${statusColor};">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-weight: 600; font-size: 12px; color: #333;">Ostatnia opinia:</span>
+              <span style="background: ${statusColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">
+                ${statusText}
+              </span>
+            </div>
+            <p style="margin: 0; font-size: 12px; color: #555; line-height: 1.4;">
+              ${latestComment.text.length > 60 ? latestComment.text.substring(0, 60) + '...' : latestComment.text}
+            </p>
+            <div style="margin-top: 4px; font-size: 10px; color: #888;">
+              ${latestComment.author} • ${new Date(latestComment.createdAt).toLocaleDateString('pl-PL')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Przyciski akcji
+      popupContent += `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;">
+          <button onclick="openCommentModal('${pointId}', '${name.replace(/'/g, '\\\'')}')" 
+                  style="background: #1976d2; color: white; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 500;">
+            <i class="fas fa-comment-plus"></i> Dodaj opiniê
+          </button>
+          <button onclick="openNavigation(${lat}, ${lon}, '${name.replace(/'/g, '\\\'')}')"
+                  style="background: #2e7d32; color: white; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 500;">
+            <i class="fas fa-route"></i> Nawigacja
+          </button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 6px;">
+          <button onclick="window.open('https://www.google.com/maps/dir//${lat},${lon}', '_blank')"
+                  style="background: #f57c00; color: white; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 500;">
+            <i class="fas fa-external-link-alt"></i> Otwórz w Google Maps
+          </button>
+        </div>
+      `;
+
+      // Jeœli s¹ komentarze, dodaj przycisk do ich wyœwietlenia
+      if (commentsCount > 0) {
+        popupContent += `
+          <button onclick="showAllComments('${pointId}', '${name.replace(/'/g, '\\\'')}')" 
+                  style="background: #f57c00; color: white; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 500; width: 100%; margin-top: 6px;">
+            <i class="fas fa-comments"></i> Zobacz wszystkie opinie (${commentsCount})
+          </button>
+        `;
+      }
+
+      popupContent += `</div>`;
+
+      marker.bindPopup(popupContent, {
+        maxWidth: 300,
+        className: 'custom-popup'
+      });
+
+      return marker;
+    }
+
+    // Dodawanie markera lokalizacji u¿ytkownika
+    function addUserLocationMarker() {
+      if (!map || !userLocation) return;
+
+      // Usuñ istniej¹cy marker u¿ytkownika
+      if (window.userMarker) {
+        map.removeLayer(window.userMarker);
+      }
+
+      // Utwórz ikonê dla lokalizacji u¿ytkownika
+      const userIcon = L.divIcon({
+        html: `
+          <div style="
+            background: #1976d2; 
+            border: 3px solid white; 
+            border-radius: 50%; 
+            width: 20px; 
+            height: 20px; 
+            box-shadow: 0 2px 10px rgba(25, 118, 210, 0.4);
+            position: relative;
+          ">
+            <div style="
+              position: absolute;
+              background: #1976d2;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              opacity: 0.3;
+              top: -10px;
+              left: -10px;
+              animation: pulse 2s infinite;
+            "></div>
+          </div>
+          <style>
+            @keyframes pulse {
+              0% { transform: scale(0.8); opacity: 0.3; }
+              50% { transform: scale(1.2); opacity: 0.1; }
+              100% { transform: scale(0.8); opacity: 0.3; }
+            }
+          </style>
+        `,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        className: 'user-location-marker'
+      });
+
+      window.userMarker = L.marker([userLocation.latitude, userLocation.longitude], { 
+        icon: userIcon,
+        zIndexOffset: 1000
+      }).addTo(map);
+
+      window.userMarker.bindPopup(`
+        <div style="text-align: center; font-family: 'Inter', sans-serif;">
+          <h4 style="margin: 0 0 8px 0; color: #1976d2; font-family: 'Poppins', sans-serif;">
+            <i class="fas fa-location-arrow"></i> Twoja lokalizacja
+          </h4>
+          <p style="margin: 0; font-size: 12px; color: #666;">
+            Wspó³rzêdne: ${userLocation.latitude.toFixed(6)}, ${userLocation.longitude.toFixed(6)}
+          </p>
+        </div>
+      `, {
+        offset: [0, -10]
+      });
+    }
+
+    // Wyczyszczenie wszystkich markerów
+    function clearAllMarkers() {
+      Object.values(markersLayers).forEach(layer => {
+        if (map.hasLayer(layer)) {
+          map.removeLayer(layer);
+        }
+      });
+      markersLayers = {};
+    }
+
+    // Komentarze - funkcje
+    function openCommentModal(pointId, pointName) {
+      currentPointForComment = pointId;
+      selectedCommentStatus = null;
+      selectedRating = 0;
+      
+      document.getElementById('modal-point-name').textContent = pointName;
+      document.getElementById('comment-text').value = '';
+      document.getElementById('comment-author').value = '';
+      
+      // Resetuj przyciski statusu
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.remove('active', 'working', 'needs-repair', 'not-working');
+      });
+      
+      // Resetuj gwiazdki oceny
+      updateStarDisplay(0);
+      document.getElementById('rating-text').textContent = 'Kliknij gwiazdki aby oceniæ';
+      
+      // Ukryj b³êdy
+      document.getElementById('status-error').style.display = 'none';
+      document.getElementById('rating-error').style.display = 'none';
+      document.getElementById('text-error').style.display = 'none';
+      document.getElementById('author-error').style.display = 'none';
+      
+      updateCharCounter();
+      document.getElementById('comment-modal').classList.add('show');
+    }
+
+    function closeCommentModal() {
+      document.getElementById('comment-modal').classList.remove('show');
+      currentPointForComment = null;
+      selectedCommentStatus = null;
+      selectedRating = 0;
+    }
+
+    function selectStatus(status) {
+      selectedCommentStatus = status;
+      
+      // Resetuj wszystkie przyciski
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.remove('active', 'working', 'needs-repair', 'not-working');
+      });
+      
+      // Aktywuj wybrany przycisk
+      const selectedBtn = document.querySelector(`[data-status="${status}"]`);
+      selectedBtn.classList.add('active', status);
+      
+      // Ukryj b³¹d
+      document.getElementById('status-error').style.display = 'none';
+    }
+
+    function updateCharCounter() {
+      const textarea = document.getElementById('comment-text');
+      const counter = document.getElementById('char-counter');
+      const length = textarea.value.length;
+      const maxLength = 500;
+      
+      counter.textContent = `${length}/${maxLength} znaków`;
+      
+      // Zmieñ kolor w zale¿noœci od d³ugoœci
+      counter.classList.remove('warning', 'danger');
+      if (length > maxLength * 0.8) {
+        counter.classList.add('warning');
+      }
+      if (length > maxLength * 0.95) {
+        counter.classList.add('danger');
+      }
+    }
+
+    // Obs³uga formularza komentarza
+    document.getElementById('comment-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Resetuj b³êdy
+      document.getElementById('status-error').style.display = 'none';
+      document.getElementById('rating-error').style.display = 'none';
+      document.getElementById('text-error').style.display = 'none';
+      document.getElementById('author-error').style.display = 'none';
+      
+      // Walidacja
+      let hasErrors = false;
+      
+      if (!selectedCommentStatus) {
+        document.getElementById('status-error').style.display = 'flex';
+        hasErrors = true;
+      }
+      
+      if (!selectedRating || selectedRating === 0) {
+        document.getElementById('rating-error').style.display = 'flex';
+        hasErrors = true;
+      }
+      
+      const commentText = document.getElementById('comment-text').value.trim();
+      if (!commentText) {
+        const textError = document.getElementById('text-error');
+        textError.querySelector('span').textContent = 'Opis jest wymagany';
+        textError.style.display = 'flex';
+        hasErrors = true;
+      } else if (commentText.length < 10) {
+        const textError = document.getElementById('text-error');
+        textError.querySelector('span').textContent = 'Opis musi mieæ co najmniej 10 znaków';
+        textError.style.display = 'flex';
+        hasErrors = true;
+      }
+      
+      const authorName = document.getElementById('comment-author').value.trim();
+      if (!authorName) {
+        const authorError = document.getElementById('author-error');
+        authorError.querySelector('span').textContent = 'Imiê/pseudonim jest wymagane';
+        authorError.style.display = 'flex';
+        hasErrors = true;
+      } else if (authorName.length < 2) {
+        const authorError = document.getElementById('author-error');
+        authorError.querySelector('span').textContent = 'Imiê/pseudonim musi mieæ co najmniej 2 znaki';
+        authorError.style.display = 'flex';
+        hasErrors = true;
+      }
+      
+      if (hasErrors) return;
+      
+      // Zapisz komentarz
+      const comment = {
+        id: Date.now().toString(),
+        pointId: currentPointForComment,
+        author: authorName,
+        text: commentText,
+        status: selectedCommentStatus,
+        rating: selectedRating,
+        createdAt: new Date().toISOString()
+      };
+      
+      saveComment(comment);
+      closeCommentModal();
+      showToast('Opinia zosta³a dodana pomyœlnie!', 'success');
+      
+      // Odœwie¿ dane na mapie
+      processMapData();
+    });
+
+    // Zarz¹dzanie komentarzami w localStorage
+    function saveComment(comment) {
+      try {
+        const comments = JSON.parse(localStorage.getItem('jamiasto_comments') || '[]');
+        comments.push(comment);
+        localStorage.setItem('jamiasto_comments', JSON.stringify(comments));
+      } catch (error) {
+        console.error('Error saving comment:', error);
+      }
+    }
+
+    function getCommentsForPoint(pointId) {
+      try {
+        const comments = JSON.parse(localStorage.getItem('jamiasto_comments') || '[]');
+        return comments.filter(comment => comment.pointId === pointId);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        return [];
+      }
+    }
+
+    function getStatusText(status) {
+      switch (status) {
+        case 'working': return 'Dzia³a';
+        case 'needs-repair': return 'Wymaga naprawy';
+        case 'not-working': return 'Nie dzia³a';
+        default: return 'Nieznany';
+      }
+    }
+
+    function getStatusColor(status) {
+      switch (status) {
+        case 'working': return '#2e7d32';
+        case 'needs-repair': return '#f57c00';
+        case 'not-working': return '#d32f2f';
+        default: return '#666';
+      }
+    }
+
+    // Toast notifications
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.transform = 'translateX(100%)';
+      
+      if (type === 'error') {
+        toast.style.background = 'linear-gradient(135deg, #d32f2f, #b71c1c)';
+        toast.innerHTML = `<i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>${message}`;
+      } else if (type === 'success') {
+        toast.style.background = 'linear-gradient(135deg, #2e7d32, #1b5e20)';
+        toast.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>${message}`;
+      } else if (type === 'warning') {
+        toast.style.background = 'linear-gradient(135deg, #f57c00, #ef6c00)';
+        toast.innerHTML = `<i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>${message}`;
+      } else {
+        toast.style.background = 'linear-gradient(135deg, #1976d2, #1565c0)';
+        toast.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>${message}`;
+      }
+      
+      document.body.appendChild(toast);
+      
+      // Animacja
+      setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // Usuniêcie po 3 sekundach
+      setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+
+    // Pokazanie wszystkich opinii dla punktu
+    function showAllComments(pointId, pointName) {
+      const comments = getCommentsForPoint(pointId);
+      
+      let content = `<div style="max-height: 400px; overflow-y: auto;">`;
+      content += `<h3 style="margin-bottom: 1rem; color: #333;">?? Wszystkie opinie: ${pointName}</h3>`;
+      
+      if (comments.length === 0) {
+        content += `<p style="color: #666; text-align: center; padding: 2rem;">Brak opinii dla tego punktu.</p>`;
+      } else {
+        comments.reverse().forEach(comment => {
+          const statusText = getStatusText(comment.status);
+          const statusColor = getStatusColor(comment.status);
+          content += `<div style="border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white;">`;
+          content += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">`;
+          content += `<span style="font-weight: 600; color: #333;">${comment.author}</span>`;
+          content += `<span style="background: ${statusColor}; color: white; padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-size: 0.8rem; font-weight: 600;">${statusText}</span>`;
+          content += `</div>`;
+          
+          // Dodaj ocenê gwiazdkow¹ jeœli istnieje
+          if (comment.rating && comment.rating > 0) {
+            content += `<div style="margin-bottom: 0.5rem;">`;
+            content += `<span style="font-size: 0.9rem;">${getRatingStars(comment.rating)}</span>`;
+            content += ` <span style="color: #666; font-size: 0.8rem;">(${comment.rating}/5)</span>`;
+            content += `</div>`;
+          }
+          
+          content += `<div style="color: #555; line-height: 1.5; margin-bottom: 0.5rem;">${comment.text}</div>`;
+          content += `<div style="color: #888; font-size: 0.8rem;">${new Date(comment.createdAt).toLocaleString('pl-PL')}</div>`;
+          content += `</div>`;
+        });
+      }
+      content += `</div>`;
+      
+      // Tworzenie prostego modala
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+        padding: 1rem;
+      `;
+      
+      modal.innerHTML = `
+        <div style="background: white; border-radius: 1rem; max-width: 600px; width: 100%; max-height: 80vh; position: relative;">
+          <button onclick="this.closest('.modal-overlay, div').remove()" 
+                  style="position: absolute; top: 1rem; right: 1rem; background: #f5f5f5; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            ×
+          </button>
+          <div style="padding: 2rem;">
+            ${content}
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Zamkniêcie po klikniêciu t³a
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+        }
+      });
+    }
+
+    // Pomocnicze funkcje
+    function getFilterType(element) {
+      const amenity = element.tags?.amenity;
+      if (amenity === "drinking_water") return "drinking_water";
+      if (amenity === "atm") return "atm";
+      if (amenity === "pharmacy") return "pharmacy";
+      if (amenity === "toilets") {
+        if (element.tags?.fee === "yes") return "toilets_paid";
+        if (element.tags?.fee === "no") return "toilets_free";
+        return "toilets_unknown";
+      }
+      return null;
+    }
+
+    function getColor(element) {
+      const amenity = element.tags?.amenity;
+      if (amenity === "drinking_water") return "blue";
+      if (amenity === "atm") return "orange";
+      if (amenity === "pharmacy") return "purple";
+      if (amenity === "toilets") {
+        if (element.tags?.fee === "yes") return "red";
+        if (element.tags?.fee === "no") return "green";
+        return "gray";
+      }
+      return "gray";
+    }
+
+    function getDescription(element) {
+      const amenity = element.tags?.amenity;
+      if (amenity === "drinking_water") return "Wodopój";
+      if (amenity === "atm") return "Bankomat";
+      if (amenity === "pharmacy") return "Apteka";
+      if (amenity === "toilets") {
+        if (element.tags?.fee === "yes") return "Toaleta (p³atna)";
+        if (element.tags?.fee === "no") return "Toaleta (bezp³atna)";
+        return "Toaleta";
+      }
+      return "Punkt";
+    }
+
+    function createColoredPin(color) {
+      const svg = `
+        <svg xmlns='http://www.w3.org/2000/svg' width='30' height='42' viewBox='0 0 24 34'>
+          <path d='M12 0C6 0 1.5 4.7 1.5 10.2C1.5 16.9 12 34 12 34C12 34 22.5 16.9 22.5 10.2C22.5 4.7 18 0 12 0Z'
+                fill='${color}' stroke='black' stroke-width='1'/>
+          <circle cx='12' cy='10.2' r='4.0' fill='#ffffff' fill-opacity='0.9'
+                  stroke='rgba(0,0,0,0.25)' stroke-width='0.4'/>
+        </svg>`;
+      
+      const url = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+      return {
+        iconUrl: url,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -36]
+      };
+    }
+
+    // Filtry
+    function updateFilterCounts() {
+      const counts = {
+        drinking_water: 0,
+        toilets_free: 0,
+        toilets_paid: 0,
+        toilets_unknown: 0,
+        atm: 0,
+        pharmacy: 0
+      };
+
+      elements.forEach(element => {
+        const filterType = getFilterType(element);
+        if (filterType) {
+          counts[filterType]++;
+        }
+      });
+
+      // Aktualizacja wyœwietlania liczb
+      Object.keys(counts).forEach(filterType => {
+        const filterItem = document.querySelector(`[data-type="${filterType}"]`);
+        if (filterItem) {
+          const countElement = filterItem.querySelector('.filter-count');
+          const count = counts[filterType];
+          countElement.textContent = count === 1 ? '1 punkt' : `${count} punktów`;
+        }
+      });
+
+      updateFilterStatus();
+    }
+
+    function toggleFilter(filterType) {
+      const filterItem = document.querySelector(`[data-type="${filterType}"]`);
+      
+      if (activeFilters.has(filterType)) {
+        activeFilters.delete(filterType);
+        filterItem.classList.remove('active');
+      } else {
+        activeFilters.add(filterType);
+        filterItem.classList.add('active');
+      }
+      
+      applyFilters();
+      updateFilterStatus();
+      saveFilterPreferences();
+    }
+
+    function selectAllFilters() {
+      activeFilters = new Set(['drinking_water', 'toilets_free', 'toilets_paid', 'toilets_unknown', 'atm', 'pharmacy']);
+      
+      document.querySelectorAll('.filter-item').forEach(item => {
+        item.classList.add('active');
+      });
+      
+      applyFilters();
+      updateFilterStatus();
+      saveFilterPreferences();
+    }
+
+    function deselectAllFilters() {
+      activeFilters.clear();
+      
+      document.querySelectorAll('.filter-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      applyFilters();
+      updateFilterStatus();
+      saveFilterPreferences();
+    }
+
+    function applyFilters() {
+      if (!map) return;
+
+      console.log('?? Aplikujê filtry:', [...activeFilters]);
+      Object.entries(markersLayers).forEach(([filterType, layer]) => {
+        const isActive = activeFilters.has(filterType);
+        const isOnMap = map.hasLayer(layer);
+        const markerCount = layer.getLayers().length;
+        
+        console.log(`??? Filtr ${filterType}: aktywny=${isActive}, na mapie=${isOnMap}, markerów=${markerCount}`);
+        
+        if (isActive) {
+          if (!isOnMap) {
+            map.addLayer(layer);
+            console.log(`? Dodano warstwê ${filterType} do mapy`);
+          }
+        } else {
+          if (isOnMap) {
+            map.removeLayer(layer);
+            console.log(`? Usuniêto warstwê ${filterType} z mapy`);
+          }
+        }
+      });
+    }
+
+    function updateFilterStatus() {
+      const statusElement = document.getElementById('filter-status');
+      const activeCount = activeFilters.size;
+      const totalCount = 6;
+      
+      if (activeCount === 0) {
+        statusElement.style.display = 'block';
+        statusElement.style.background = '#ffebee';
+        statusElement.style.borderColor = '#f44336';
+        statusElement.style.color = '#c62828';
+        statusElement.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>Wszystkie kategorie s¹ ukryte';
+      } else if (activeCount < totalCount) {
+        statusElement.style.display = 'block';
+        statusElement.style.background = '#e3f2fd';
+        statusElement.style.borderColor = '#1976d2';
+        statusElement.style.color = '#1565c0';
+        statusElement.innerHTML = `Pokazujê <strong>${activeCount}</strong> z <strong>${totalCount}</strong> kategorii punktów`;
+      } else {
+        statusElement.style.display = 'none';
+      }
+    }
+
+    function saveFilterPreferences() {
+      try {
+        localStorage.setItem('jamiasto_filters', JSON.stringify([...activeFilters]));
+      } catch (error) {
+        console.log('Could not save filter preferences:', error);
+      }
+    }
+
+    function loadFilterPreferences() {
+      try {
+        const savedFilters = localStorage.getItem('jamiasto_filters');
+        if (savedFilters) {
+          const filters = JSON.parse(savedFilters);
+          activeFilters = new Set(filters);
+          
+          // Aktualizacja UI
+          document.querySelectorAll('.filter-item').forEach(item => {
+            const filterType = item.getAttribute('data-type');
+            if (activeFilters.has(filterType)) {
+              item.classList.add('active');
+            } else {
+              item.classList.remove('active');
+            }
+          });
+        }
+      } catch (error) {
+        console.log('Could not load filter preferences:', error);
+      }
+    }
+
+    // Funkcje pomocnicze UI
+    function showLoading() {
+      document.getElementById('loading').classList.add('show');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').classList.remove('show');
+    }
+
+    function showError(message) {
+      const errorElement = document.getElementById('location-error');
+      errorElement.querySelector('span').textContent = message;
+      errorElement.style.display = 'flex';
+    }
+
+    function hideError() {
+      document.getElementById('location-error').style.display = 'none';
+    }
+
+    // NEW: Search functionality for cities
+    function searchCities(query) {
+      const searchResults = document.getElementById('search-results');
+      
+      if (!query || query.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+      }
+
+      // Search through all cities in all voivodeships
+      const allCities = [];
+      Object.entries(WOJ_MIASTA).forEach(([voivodeship, data]) => {
+        data.cities.forEach(city => {
+          allCities.push({ city: city, voivodeship: voivodeship });
+        });
+      });
+
+      // Filter cities that match the query (case-insensitive)
+      const matches = allCities.filter(item => 
+        item.city.toLowerCase().includes(query.toLowerCase())
+      );
+
+      if (matches.length === 0) {
+        searchResults.innerHTML = `
+          <div style="padding: 1rem; text-align: center; color: #666;">
+            <i class="fas fa-search" style="margin-right: 0.5rem;"></i>
+            Nie znaleziono miast pasuj¹cych do "${query}"
+          </div>
+        `;
+        searchResults.style.display = 'block';
+        return;
+      }
+
+      // Limit results to first 10 matches
+      const limitedMatches = matches.slice(0, 10);
+      
+      let resultsHTML = '';
+      limitedMatches.forEach((match, index) => {
+        resultsHTML += `
+          <div class="search-result-item" 
+               style="padding: 0.8rem 1rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s;"
+               onmouseover="this.style.backgroundColor='#f8f9fa'"
+               onmouseout="this.style.backgroundColor='white'"
+               onclick="selectCityFromSearch('${match.city}', '${match.voivodeship}')">
+            <div style="font-weight: 600; color: #333; margin-bottom: 0.2rem;">
+              <i class="fas fa-map-marker-alt" style="color: #1976d2; margin-right: 0.5rem; width: 12px;"></i>
+              ${match.city}
+            </div>
+            <div style="font-size: 0.85rem; color: #666;">
+              ${match.voivodeship}
+            </div>
+          </div>
+        `;
+      });
+
+      if (matches.length > 10) {
+        resultsHTML += `
+          <div style="padding: 0.5rem 1rem; text-align: center; color: #888; font-size: 0.85rem; background: #f8f9fa;">
+            <i class="fas fa-ellipsis-h" style="margin-right: 0.3rem;"></i>
+            i ${matches.length - 10} wiêcej wyników...
+          </div>
+        `;
+      }
+
+      searchResults.innerHTML = resultsHTML;
+      searchResults.style.display = 'block';
+    }
+
+    function selectCityFromSearch(cityName, voivodeshipName) {
+      console.log(`?? Wybrano z wyszukiwarki: ${cityName} (${voivodeshipName})`);
+      
+      // Hide search results
+      document.getElementById('search-results').style.display = 'none';
+      document.getElementById('city-search').value = '';
+      
+      // Set the selected voivodeship and city
+      selectedVoivodeship = voivodeshipName;
+      selectedCity = cityName;
+      currentVoivodeship = voivodeshipName;
+      currentCity = cityName;
+      
+      // Update the UI to show the selected city
+      document.getElementById('voivodeship-section').classList.add('hidden');
+      document.getElementById('city-section').classList.add('hidden');
+      document.getElementById('selected-section').classList.remove('hidden');
+      document.getElementById('selected-title').textContent = `${cityName}, ${voivodeshipName}`;
+      
+      // Show filter and map cards
+      document.getElementById('filter-card').style.display = 'block';
+      document.getElementById('map-card').style.display = 'block';
+      
+      // Clear any previous data
+      userLocation = null;
+      elements = [];
+      clearAllMarkers();
+      
+      // Show success message
+      showToast(`Wybrano miasto: ${cityName}`, 'success');
+      
+      // Initialize map and load data
+      try {
+        if (!map) {
+          initializeMap();
+        } else {
+          // Reset map view to Poland if map exists
+          map.setView([52.0693, 19.4803], 6);
+        }
+        loadCityData();
+      } catch (error) {
+        console.error('B³¹d podczas inicjalizacji:', error);
+        showToast('Wyst¹pi³ b³¹d podczas ³adowania miasta', 'error');
+      }
+      
+      // Scroll to map
+      setTimeout(() => {
+        document.getElementById('map-card').scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 300);
+    }
+
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(e) {
+      const searchSection = e.target.closest('.search-section');
+      if (!searchSection) {
+        document.getElementById('search-results').style.display = 'none';
+      }
+    });
+
+    // NEW: Star rating system functions
+    let selectedRating = 0;
+    
+    function selectRating(rating) {
+      selectedRating = rating;
+      updateStarDisplay(rating);
+      
+      const ratingTexts = {
+        1: "? Bardzo s³abo",
+        2: "?? S³abo", 
+        3: "??? W porz¹dku",
+        4: "???? Dobrze",
+        5: "????? Bardzo dobrze"
+      };
+      
+      document.getElementById('rating-text').textContent = ratingTexts[rating];
+      document.getElementById('rating-error').style.display = 'none';
+    }
+    
+    function hoverRating(rating) {
+      updateStarDisplay(rating, true);
+    }
+    
+    function resetRatingHover() {
+      updateStarDisplay(selectedRating);
+    }
+    
+    function updateStarDisplay(rating, isHover = false) {
+      const stars = document.querySelectorAll('.star');
+      stars.forEach((star, index) => {
+        const starRating = index + 1;
+        if (starRating <= rating) {
+          star.style.color = isHover ? '#ffed4e' : '#ffd700';
+        } else {
+          star.style.color = '#ddd';
+        }
+      });
+    }
+    
+    function getRatingStars(rating) {
+      let stars = '';
+      for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+          stars += '<span style="color: #ffd700;">?</span>';
+        } else {
+          stars += '<span style="color: #ddd;">?</span>';
+        }
+      }
+      return stars;
+    }
+    
+    function getAverageRating(comments) {
+      if (!comments || comments.length === 0) return 0;
+      const ratingsWithValues = comments.filter(c => c.rating && c.rating > 0);
+      if (ratingsWithValues.length === 0) return 0;
+      
+      const sum = ratingsWithValues.reduce((acc, comment) => acc + comment.rating, 0);
+      return Math.round((sum / ratingsWithValues.length) * 10) / 10;
+    }
+
+    // Zamykanie modala po klikniêciu t³a
+    document.getElementById('comment-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeCommentModal();
+      }
+    });
+
+    // ================================
+    // SYSTEM NAWIGACJI
+    // ================================
+    let currentDestination = null;
+    let currentNavigationType = 'walking';
+    let currentRoute = null;
+    let routePolyline = null;
+
+    // Otwórz panel nawigacji
+    function openNavigation(lat, lon, name) {
+      currentDestination = { lat, lon, name };
+      
+      // Aktualizuj informacje o celu
+      document.getElementById('nav-destination-name').textContent = name;
+      document.getElementById('nav-destination-address').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+      
+      // Poka¿ panel nawigacji
+      document.getElementById('navigation-card').style.display = 'block';
+      
+      // Oblicz trasê
+      calculateRoute();
+    }
+
+    // Zamknij panel nawigacji
+    function closeNavigation() {
+      document.getElementById('navigation-card').style.display = 'none';
+      
+      // Usuñ trasê z mapy
+      if (routePolyline && map.hasLayer(routePolyline)) {
+        map.removeLayer(routePolyline);
+      }
+      
+      currentDestination = null;
+      currentRoute = null;
+      routePolyline = null;
+    }
+
+    // Ustaw typ nawigacji (pieszo/samochodem)
+    function setNavigationType(type) {
+      currentNavigationType = type;
+      
+      // Aktualizuj przyciski
+      document.querySelectorAll('.nav-option-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`[data-type="${type}"]`).classList.add('active');
+      
+      // Przelicz trasê
+      if (currentDestination) {
+        calculateRoute();
+      }
+    }
+
+    // Oblicz trasê przy u¿yciu OSRM (Open Source Routing Machine)
+    async function calculateRoute() {
+      if (!userLocation || !currentDestination) {
+        showToast('Brak lokalizacji u¿ytkownika lub celu podró¿y', 'error');
+        return;
+      }
+
+      const profile = currentNavigationType === 'walking' ? 'foot' : 'car';
+      const url = `https://router.project-osrm.org/route/v1/${profile}/${userLocation.longitude},${userLocation.latitude};${currentDestination.lon},${currentDestination.lat}?steps=true&geometries=geojson&overview=full`;
+
+      try {
+        showToast('Obliczanie trasy...', 'info');
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+          currentRoute = data.routes[0];
+          displayRoute();
+          displayDirections();
+          showToast('Trasa zosta³a obliczona!', 'success');
+        } else {
+          throw new Error('Nie mo¿na obliczyæ trasy');
+        }
+      } catch (error) {
+        console.error('B³¹d obliczania trasy:', error);
+        showToast('Nie mo¿na obliczyæ trasy. Pokazujê liniê prost¹.', 'warning');
+        
+        // Fallback - poka¿ prost¹ liniê
+        showStraightLine();
+      }
+    }
+
+    // Wyœwietl trasê na mapie
+    function displayRoute() {
+      if (!currentRoute || !map) return;
+      
+      // Usuñ poprzedni¹ trasê
+      if (routePolyline && map.hasLayer(routePolyline)) {
+        map.removeLayer(routePolyline);
+      }
+      
+      // Utwórz now¹ trasê
+      const coordinates = currentRoute.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+      routePolyline = L.polyline(coordinates, {
+        color: '#1976d2',
+        weight: 4,
+        opacity: 0.8
+      }).addTo(map);
+      
+      // Dostosuj widok mapy do trasy
+      const bounds = routePolyline.getBounds();
+      map.fitBounds(bounds, { padding: [20, 20] });
+      
+      // Poka¿ podsumowanie trasy
+      const distance = (currentRoute.distance / 1000).toFixed(1) + ' km';
+      const duration = Math.round(currentRoute.duration / 60) + ' min';
+      
+      document.getElementById('route-distance').textContent = distance;
+      document.getElementById('route-duration').textContent = duration;
+      document.getElementById('route-summary').style.display = 'block';
+    }
+
+    // Wyœwietl instrukcje krok po kroku
+    function displayDirections() {
+      if (!currentRoute || !currentRoute.legs) return;
+      
+      const directionsContainer = document.getElementById('navigation-directions');
+      directionsContainer.innerHTML = '';
+      
+      let stepNumber = 1;
+      currentRoute.legs.forEach(leg => {
+        leg.steps.forEach(step => {
+          const stepDiv = document.createElement('div');
+          stepDiv.className = 'direction-step';
+          
+          const instruction = step.maneuver.instruction || getInstructionFromType(step.maneuver.type);
+          const distance = step.distance > 1000 
+            ? (step.distance / 1000).toFixed(1) + ' km' 
+            : Math.round(step.distance) + ' m';
+          
+          stepDiv.innerHTML = `
+            <div class="step-icon">${stepNumber}</div>
+            <div class="step-content">
+              <div class="step-instruction">${instruction}</div>
+              <div class="step-distance">${distance}</div>
+            </div>
+          `;
+          
+          directionsContainer.appendChild(stepDiv);
+          stepNumber++;
+        });
+      });
+    }
+
+    // Poka¿ prost¹ liniê jako fallback
+    function showStraightLine() {
+      if (!userLocation || !currentDestination || !map) return;
+      
+      // Usuñ poprzedni¹ trasê
+      if (routePolyline && map.hasLayer(routePolyline)) {
+        map.removeLayer(routePolyline);
+      }
+      
+      // Utwórz prost¹ liniê
+      const coordinates = [
+        [userLocation.latitude, userLocation.longitude],
+        [currentDestination.lat, currentDestination.lon]
+      ];
+      
+      routePolyline = L.polyline(coordinates, {
+        color: '#ff5722',
+        weight: 3,
+        opacity: 0.7,
+        dashArray: '5, 10'
+      }).addTo(map);
+      
+      // Oblicz odleg³oœæ w linii prostej
+      const distance = map.distance(
+        [userLocation.latitude, userLocation.longitude],
+        [currentDestination.lat, currentDestination.lon]
+      );
+      
+      const distanceKm = (distance / 1000).toFixed(1) + ' km';
+      const estimatedTime = currentNavigationType === 'walking' 
+        ? Math.round(distance / 1000 * 12) + ' min' // ~5 km/h
+        : Math.round(distance / 1000 * 2) + ' min';  // ~30 km/h
+      
+      document.getElementById('route-distance').textContent = distanceKm + ' (linia prosta)';
+      document.getElementById('route-duration').textContent = 'ok. ' + estimatedTime;
+      document.getElementById('route-summary').style.display = 'block';
+      
+      // Dostosuj widok mapy
+      const bounds = routePolyline.getBounds();
+      map.fitBounds(bounds, { padding: [20, 20] });
+      
+      // Poka¿ proste instrukcje
+      const directionsContainer = document.getElementById('navigation-directions');
+      directionsContainer.innerHTML = `
+        <div class="direction-step">
+          <div class="step-icon">1</div>
+          <div class="step-content">
+            <div class="step-instruction">IdŸ prosto w kierunku ${currentDestination.name}</div>
+            <div class="step-distance">${distanceKm} w linii prostej</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Rozpocznij nawigacjê (otwórz w domyœlnej aplikacji)
+    function startNavigation() {
+      if (!currentDestination) return;
+      
+      const url = `https://www.google.com/maps/dir//${currentDestination.lat},${currentDestination.lon}`;
+      window.open(url, '_blank');
+      
+      showToast('Otwieranie nawigacji w Google Maps...', 'success');
+    }
+
+    // Pomocnicza funkcja do konwersji typów manewrów na instrukcje
+    function getInstructionFromType(type) {
+      const instructions = {
+        'turn-straight': 'JedŸ prosto',
+        'turn-right': 'Skrêæ w prawo',
+        'turn-left': 'Skrêæ w lewo',
+        'turn-sharp-right': 'Skrêæ ostro w prawo',
+        'turn-sharp-left': 'Skrêæ ostro w lewo',
+        'turn-slight-right': 'Skrêæ lekko w prawo',
+        'turn-slight-left': 'Skrêæ lekko w lewo',
+        'merge': 'W³¹cz siê do ruchu',
+        'ramp': 'WjedŸ na zjazd',
+        'on-ramp': 'WjedŸ na autostradê',
+        'off-ramp': 'ZjedŸ z autostrady',
+        'fork': 'Trzymaj siê rozwidlenia',
+        'continue': 'Kontynuuj prosto',
+        'arrive': 'Dotar³eœ do celu'
+      };
+      
+      return instructions[type] || 'Kontynuuj pod¹¿anie tras¹';
+    }
+
+  </script>
+</body>
+</html>
